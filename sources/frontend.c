@@ -17,6 +17,8 @@ enum id_stat {
 
 static enum id_stat getIdName(const char ** src_str, char * buffer);
 
+static void skipSpaces(const char ** code);
+
 fe_context_t frontendInit(size_t token_num)
 {
     fe_context_t frontend = {};
@@ -91,6 +93,8 @@ int lexicalAnalysis(fe_context_t * frontend, const char * code)
     size_t token_index = 0;
     const char * cur_ch = code;
 
+    skipSpaces(&cur_ch);
+
     while (*cur_ch != '\0'){
         if (isdigit(*cur_ch)){
 
@@ -157,12 +161,13 @@ int lexicalAnalysis(fe_context_t * frontend, const char * code)
                 frontend->tokens[token_index].val.var = var_index;
             }
             else {
-                logPrint(LOG_RELEASE, "LEXIC ERROR: unknown opeator %s\n", buffer);
-                fprintf(stderr, "LEXIC ERROR: unknown operator %s\n", buffer);
+                logPrint(LOG_RELEASE, "LEXIC ERROR: unknown opeator '%s'\n", buffer);
+                fprintf(stderr, "LEXIC ERROR: unknown operator '%s'\n", buffer);
 
                 return 1;
             }
         }
+        skipSpaces(&cur_ch);
 
         token_index++;
     }
@@ -180,20 +185,41 @@ static enum id_stat getIdName(const char ** src_str, char * buffer)
     assert(buffer);
 
     if (isalpha(**src_str) || **src_str == '_'){
-        while((**src_str != '\0') && (isalpha(**src_str) || **src_str == '_' || isdigit(**src_str)))
+        while((**src_str != '\0') && (**src_str != COMMENT_START) && (isalpha(**src_str) || **src_str == '_' || isdigit(**src_str)))
             *(buffer++) = *((*src_str)++);
 
         return IS_VAR_OR_OPR;
     }
 
-    while ((**src_str != '\0') && (!isalpha(**src_str) && !isdigit(**src_str) && !isspace(**src_str) && **src_str != '_'))
+    while ((**src_str != '\0') && (**src_str != COMMENT_START) && (!isalpha(**src_str) && !isdigit(**src_str) && !isspace(**src_str) && **src_str != '_'))
         *(buffer++) = *((*src_str)++);
 
     return IS_OPR;
 }
 
+static void skipSpaces(const char ** code)
+{
+    assert(code);
+    assert(*code);
+
+    bool in_comment = false;
+
+    while ((**code != '\0') && (in_comment || isspace(**code) || **code == COMMENT_START)){
+        if (in_comment && **code == COMMENT_END)
+            in_comment = false;
+        else if (**code == COMMENT_START)
+            in_comment = true;
+
+
+        (*code)++;
+    }
+}
+
 
 /*----------------------recursive descent----------------------*/
+
+static node_t * getChain(fe_context_t * frontend);
+
 static node_t * getAssign(fe_context_t * frontend);
 
 static node_t * getExpr(fe_context_t * frontend);
@@ -220,7 +246,7 @@ node_t * parseCode(fe_context_t * frontend)
 
     frontend->cur_node = frontend->tokens;
 
-    node_t * root = getAssign(frontend);
+    node_t * root = getChain(frontend);
 
     if (root == NULL){
         fprintf(stderr, "failed to parse\n");
@@ -233,6 +259,32 @@ node_t * parseCode(fe_context_t * frontend)
     }
 
     return root;
+}
+
+static node_t * getChain(fe_context_t * frontend)
+{
+    assert(frontend);
+
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getChain   (token #%zu)\n", (size_t)(token - frontend->tokens));
+
+    node_t * node = NULL;
+    node_t * last = NULL;
+
+    while ((last = getAssign(frontend)) != NULL){
+        if (!(token->type == OPR && token->val.op == SEP)){
+            frontend->status = HARD_ERROR;
+
+            return NULL;
+        }
+
+        token->left  = node;
+        token->right = last;
+
+        node = token;
+        token++;
+    }
+
+    return node;
 }
 
 static node_t * getAssign(fe_context_t * frontend)
@@ -480,7 +532,10 @@ static node_t * getFunc(fe_context_t * frontend)
 
 #undef token
 
+//TODO add more functionality
 static void syntaxError(const char * expected, node_t * node)
 {
     assert(expected);
+
+    fprintf(stderr, "SYNTAX ERROR\n");
 }

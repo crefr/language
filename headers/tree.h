@@ -23,7 +23,8 @@ enum oper{
 
     LBRACKET,
     RBRACKET,
-    ASSIGN
+    ASSIGN,
+    SEP
 };
 
 union value {

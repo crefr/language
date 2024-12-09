@@ -1,5 +1,7 @@
 <RESULT>  ::= <Assign>
 
+<Chain>   ::= (<Assign> ";")*
+
 <Assign>  ::= <Var> "=" <Expr>
 
 <Expr>    ::= <MulDiv>  (("+" | "-") <MulDiv>)*

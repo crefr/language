@@ -31,6 +31,8 @@ int main()
     node_t * tree = parseCode(&fe);
     assert(tree);
 
+    treeDumpGraph(&fe, tree);
+
     printTreePrefix(&fe, tree);
     printf("\n");
 

@@ -6,6 +6,9 @@
 #include "hashtable.h"
 #include "tree.h"
 
+const char COMMENT_START = '#';
+const char COMMENT_END   = '#';
+
 // const size_t MAX_TOKEN_NUM = 1024;
 const size_t MAX_VAR_NUM = 64;
 const size_t NAME_MAX_LEN = 64;
@@ -64,7 +67,8 @@ const oper_t opers[] = {
 
     {.name = "("  , .num = LBRACKET, .binary = false, .commutative = false},
     {.name = ")"  , .num = RBRACKET, .binary = false, .commutative = false},
-    {.name = "="  , .num = ASSIGN  , .binary = true , .commutative = false}
+    {.name = "="  , .num = ASSIGN  , .binary = true , .commutative = false},
+    {.name = ";"  , .num = SEP     , .binary = true , .commutative = false},
 };
 const size_t opers_size = sizeof(opers) / sizeof(*opers);
 
@@ -77,6 +81,10 @@ void frontendDtor(fe_context_t * frontend);
 void frontendDump(fe_context_t * frontend);
 
 void printTreePrefix(fe_context_t * fe, node_t * node);
+
+void treeDumpGraph(fe_context_t * fe, node_t * root_node);
+
+void treeMakeDot(fe_context_t * fe, node_t * node, FILE * dot_file);
 
 /// @brief do lexical analysis of the source code, returns 0 if succeeded
 int lexicalAnalysis(fe_context_t * frontend, const char * code);
