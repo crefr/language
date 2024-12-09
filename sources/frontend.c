@@ -44,6 +44,46 @@ void frontendDtor(fe_context_t * frontend)
     frontend->tokens = NULL;
 }
 
+void frontendDump(fe_context_t * frontend)
+{
+    assert(frontend);
+
+    logPrint(LOG_DEBUG, "------------frontend context dump-----------\n");
+
+    logPrint(LOG_DEBUG, "\ttokens size: %zu\n", frontend->tokens_size);
+    logPrint(LOG_DEBUG, "\ttokens:\n");
+
+    for (size_t token_index = 0; token_index < frontend->tokens_size; token_index++){
+        logPrint(LOG_DEBUG, "\t\ttoken #%zu:\n", token_index);
+        node_t cur_token = frontend->tokens[token_index];
+
+        if (cur_token.type == NUM){
+            logPrint(LOG_DEBUG, "\t\t\ttype = NUM\n\t\t\tvalue = %lg\n", cur_token.val.number);
+        }
+        else if (cur_token.type == VAR){
+            logPrint(LOG_DEBUG, "\t\t\ttype = VAR\n\t\t\tvalue = '%s'\n", frontend->vars[cur_token.val.var].name);
+        }
+        else if (cur_token.type == OPR){
+            logPrint(LOG_DEBUG, "\t\t\ttype = OPR\n\t\t\tvalue = '%s'\n", opers[cur_token.val.op]);
+        }
+        else {
+            logPrint(LOG_DEBUG, "\t\t\ttype = END\n");
+        }
+    }
+
+    logPrint(LOG_DEBUG, "\tvars size: %zu\n", frontend->tokens_size);
+    logPrint(LOG_DEBUG, "\tvars:\n");
+
+    for (size_t var_index = 0; var_index < frontend->var_size; var_index++){
+        logPrint(LOG_DEBUG, "\t\tvar #%zu:\n", var_index);
+        var_t cur_var = frontend->vars[var_index];
+
+        logPrint(LOG_DEBUG, "\t\t\tname = '%s'\n\t\t\tvalue = %lg\n", cur_var.name, cur_var.value);
+    }
+
+    logPrint(LOG_DEBUG, "----------frontend context dump end---------\n");
+}
+
 int lexicalAnalysis(fe_context_t * frontend, const char * code)
 {
     assert(frontend);
@@ -67,7 +107,6 @@ int lexicalAnalysis(fe_context_t * frontend, const char * code)
 
         else {
             char buffer[ID_MAX_LEN] = {};
-            size_t buf_index = 0;
 
             enum id_stat id_status = getIdName(&cur_ch, buffer);
 
@@ -96,7 +135,8 @@ int lexicalAnalysis(fe_context_t * frontend, const char * code)
 
                     var_index = frontend->var_size;
 
-                    strncpy(frontend->vars[var_index].name, buffer, buf_index);
+                    strcpy(frontend->vars[var_index].name, buffer);
+
                     frontend->var_size++;
                 }
                 else {
@@ -189,6 +229,8 @@ static node_t * getExpr(fe_context_t * frontend)
 {
     assert(frontend);
 
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getExpr    (token #%zu)\n", (size_t)(token - frontend->tokens));
+
     node_t * node = getMulDiv(frontend);
 
     if (frontend->status == HARD_ERROR)
@@ -214,6 +256,8 @@ static node_t * getExpr(fe_context_t * frontend)
 static node_t * getMulDiv(fe_context_t * frontend)
 {
     assert(frontend);
+
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getMulDiv  (token #%zu)\n", (size_t)(token - frontend->tokens));
 
     node_t * node = getPower(frontend);
 
@@ -241,6 +285,8 @@ static node_t * getPower(fe_context_t * frontend)
 {
     assert(frontend);
 
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getPower   (token #%zu)\n", (size_t)(token - frontend->tokens));
+
     node_t * node = getPrimary(frontend);
 
     if (frontend->status == HARD_ERROR)
@@ -266,6 +312,8 @@ static node_t * getPower(fe_context_t * frontend)
 static node_t * getPrimary(fe_context_t * frontend)
 {
     assert(frontend);
+
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getPrimary (token #%zu)\n", (size_t)(token - frontend->tokens));
 
     if (token->type == OPR && token->val.op == LBRACKET){
         token++;
@@ -309,7 +357,11 @@ static node_t * getNumber(fe_context_t * frontend)
 {
     assert(frontend);
 
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getNumber  (token #%zu)\n", (size_t)(token - frontend->tokens));
+
     if (token->type == NUM){
+        frontend->status = SUCCESS;
+
         node_t * num_node = token;
         token++;
 
@@ -323,6 +375,8 @@ static node_t * getNumber(fe_context_t * frontend)
 static node_t * getVar(fe_context_t * frontend)
 {
     assert(frontend);
+
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getVar     (token #%zu)\n", (size_t)(token - frontend->tokens));
 
     if (!(token->type == VAR)){
         frontend->status  = SOFT_ERROR;
@@ -341,7 +395,9 @@ static node_t * getFunc(fe_context_t * frontend)
 {
     assert(frontend);
 
-    if (!(token->type == OPR)){
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getFunc    (token #%zu)\n", (size_t)(token - frontend->tokens));
+
+    if (token->type != OPR){
         frontend->status = SOFT_ERROR;
 
         return NULL;
@@ -354,6 +410,7 @@ static node_t * getFunc(fe_context_t * frontend)
 
             if (!(token->type == OPR && token->val.op == LBRACKET)){
                 frontend->status = SOFT_ERROR;
+                token--;
 
                 return NULL;
             }
@@ -361,11 +418,12 @@ static node_t * getFunc(fe_context_t * frontend)
 
             func_node->left = getExpr(frontend);
 
-            if (!(token->type == OPR && token->val.op)){
+            if (!(token->type == OPR && token->val.op == RBRACKET)){
                 frontend->status = HARD_ERROR;
 
                 return NULL;
             }
+            token++;
 
             return func_node;
         }

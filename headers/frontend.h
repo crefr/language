@@ -1,6 +1,8 @@
 #ifndef FRONTEND_INCLUDED
 #define FRONTEND_INCLUDED
 
+#include <stdbool.h>
+
 #include "hashtable.h"
 #include "tree.h"
 
@@ -70,6 +72,10 @@ fe_context_t frontendInit(size_t token_num);
 
 /// @brief destruct frontend context
 void frontendDtor(fe_context_t * frontend);
+
+void frontendDump(fe_context_t * frontend);
+
+void printTreePrefix(fe_context_t * fe, node_t * node);
 
 /// @brief do lexical analysis of the source code, returns 0 if succeeded
 int lexicalAnalysis(fe_context_t * frontend, const char * code);
