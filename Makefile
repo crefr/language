@@ -4,7 +4,7 @@ SRCDIR 		   = sources/
 HEADDIR 	   = headers/
 
 CC = g++
-BUILD  = RELEASE
+BUILD  = LINUX
 # windows
 CFLAGS_WINDOWS =-Wshadow -Winit-self -Wredundant-decls -Wcast-align -Wundef -Wfloat-equal -Winline						\
 		-Wunreachable-code -Wmissing-declarations -Wmissing-include-dirs -Wswitch-enum -Wswitch-default					\
@@ -40,8 +40,8 @@ endif
 # CFLAGS_TEMP = $(CFLAGS)
 CFLAGS := -I./$(HEADDIR) -I./$(BINTREEHEADDIR) $(CFLAGS)
 
-ALLDEPS = $(HEADDIR)logger.h $(HEADDIR)hashtable.h
-OBJECTS = main.o logger.o
+ALLDEPS = $(HEADDIR)logger.h $(HEADDIR)hashtable.h $(HEADDIR)frontend.h $(HEADDIR)tree.h
+OBJECTS = main.o logger.o frontend.o tree.o
 OBJECTS_WITH_DIR 	 = $(addprefix $(OBJDIR),$(OBJECTS))
 
 TABLELIB = hash-table/Obj/hashtable.a
@@ -50,7 +50,7 @@ TABLELIBFOLDER = hash-table/
 $(FILENAME): $(OBJECTS_WITH_DIR) $(TABLELIB)
 	$(CC) $(CFLAGS) $^ -o $@
 
-$(OBJECTS_WITH_DIR): $(OBJDIR)%.o: $(SRCDIR)%.cpp $(ALLDEPS)
+$(OBJECTS_WITH_DIR): $(OBJDIR)%.o: $(SRCDIR)%.c $(ALLDEPS)
 	mkdir -p $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 

@@ -1,8 +1,6 @@
 #ifndef LOGGER_INCLUDED
 #define LOGGER_INCLUDED
 
-#include <wchar.h>
-
 /// @brief different levels of logging, IT IS NECESSARY TO WRITE THEM IN ASCENDING ORDER
 enum loglevels{LOG_RELEASE, LOG_DEBUG, LOG_DEBUG_PLUS};
 
@@ -43,9 +41,6 @@ int  logStart(const char * logfilename, enum loglevels loglevel, log_mode_t mode
 
 /// @brief formats and prints string to log file
 void logPrint(enum loglevels loglevel, const char * fmt, ...);
-
-/// @brief formats and prints wide char string to log file
-void wlogPrint(enum loglevels loglevel, const wchar_t * log_str, ...);
 
 /// @brief prints current time to log file
 void logPrintTime(enum loglevels loglevel);
