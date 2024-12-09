@@ -63,7 +63,8 @@ const oper_t opers[] = {
     {.name = "!"  , .num = FAC, .binary = false, .commutative = false},
 
     {.name = "("  , .num = LBRACKET, .binary = false, .commutative = false},
-    {.name = ")"  , .num = RBRACKET, .binary = false, .commutative = false}
+    {.name = ")"  , .num = RBRACKET, .binary = false, .commutative = false},
+    {.name = "="  , .num = ASSIGN  , .binary = true , .commutative = false}
 };
 const size_t opers_size = sizeof(opers) / sizeof(*opers);
 

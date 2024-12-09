@@ -1,4 +1,6 @@
-<RESULT>  ::= <Expr>
+<RESULT>  ::= <Assign>
+
+<Assign>  ::= <Var> "=" <Expr>
 
 <Expr>    ::= <MulDiv>  (("+" | "-") <MulDiv>)*
 <MulDiv>  ::= <Power> (("*" | "/") <Power>)*

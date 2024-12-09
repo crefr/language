@@ -22,7 +22,8 @@ enum oper{
     FAC,
 
     LBRACKET,
-    RBRACKET
+    RBRACKET,
+    ASSIGN
 };
 
 union value {

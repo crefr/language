@@ -194,6 +194,8 @@ static enum id_stat getIdName(const char ** src_str, char * buffer)
 
 
 /*----------------------recursive descent----------------------*/
+static node_t * getAssign(fe_context_t * frontend);
+
 static node_t * getExpr(fe_context_t * frontend);
 
 static node_t * getMulDiv(fe_context_t * frontend);
@@ -218,7 +220,7 @@ node_t * parseCode(fe_context_t * frontend)
 
     frontend->cur_node = frontend->tokens;
 
-    node_t * root = getExpr(frontend);
+    node_t * root = getAssign(frontend);
 
     if (root == NULL){
         fprintf(stderr, "failed to parse\n");
@@ -231,6 +233,35 @@ node_t * parseCode(fe_context_t * frontend)
     }
 
     return root;
+}
+
+static node_t * getAssign(fe_context_t * frontend)
+{
+    assert(frontend);
+
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getAssign  (token #%zu)\n", (size_t)(token - frontend->tokens));
+
+    node_t * left_part = getVar(frontend);
+    if (frontend->status != SUCCESS){
+        return NULL;
+    }
+
+    node_t * assign_node = token;
+    if (!(token->type == OPR && token->val.op == ASSIGN)){
+        syntaxError("=", token);
+        return NULL;
+    }
+    token++;
+
+    node_t * right_part = getExpr(frontend);
+    if (frontend->status != SUCCESS){
+        return NULL;
+    }
+
+    assign_node->left  =  left_part;
+    assign_node->right = right_part;
+
+    return assign_node;
 }
 
 static node_t * getExpr(fe_context_t * frontend)
