@@ -105,6 +105,14 @@ int lexicalAnalysis(fe_context_t * frontend, const char * code)
             logPrint(LOG_DEBUG_PLUS, "LEXIC: scanned number: %lg\n", number);
         }
 
+        else if (*cur_ch == '(' || *cur_ch == ')'){
+            enum oper op_num = (*cur_ch == '(') ? LBRACKET : RBRACKET;
+            cur_ch++;
+
+            frontend->tokens[token_index].type = OPR;
+            frontend->tokens[token_index].val.op = op_num;
+        }
+
         else {
             char buffer[ID_MAX_LEN] = {};
 
@@ -237,17 +245,18 @@ static node_t * getExpr(fe_context_t * frontend)
         return NULL;
 
     while (token->type == OPR && (token->val.op == ADD || token->val.op == SUB)){
+        node_t * cur_node = token;
+        token++;
+
         node_t * node2 = getMulDiv(frontend);
 
         if (frontend->status == HARD_ERROR)
             return NULL;
 
-        token->left  = node;
-        token->right = node2;
+        cur_node->left  = node;
+        cur_node->right = node2;
 
-        node = token;
-
-        token++;
+        node = cur_node;
     }
 
     return node;
@@ -265,17 +274,18 @@ static node_t * getMulDiv(fe_context_t * frontend)
         return NULL;
 
     while (token->type == OPR && (token->val.op == MUL || token->val.op == DIV)){
+        node_t * cur_node = token;
+        token++;
+
         node_t * node2 = getPower(frontend);
 
         if (frontend->status == HARD_ERROR)
             return NULL;
 
-        token->left  = node;
-        token->right = node2;
+        cur_node->left  = node;
+        cur_node->right = node2;
 
-        node = token;
-
-        token++;
+        node = cur_node;
     }
 
     return node;
@@ -293,17 +303,18 @@ static node_t * getPower(fe_context_t * frontend)
         return NULL;
 
     while (token->type == OPR && token->val.op == POW){
+        node_t * cur_node = token;
+        token++;
+
         node_t * node2 = getPower(frontend);
 
         if (frontend->status == HARD_ERROR)
             return NULL;
 
-        token->left  = node;
-        token->right = node2;
+        cur_node->left  = node;
+        cur_node->right = node2;
 
-        node = token;
-
-        token++;
+        node = cur_node;
     }
 
     return node;

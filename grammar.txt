@@ -3,7 +3,7 @@
 <Expr>    ::= <MulDiv>  (("+" | "-") <MulDiv>)*
 <MulDiv>  ::= <Power> (("*" | "/") <Power>)*
 
-<Power>   ::= <Primary> ("^" <Power>)*
+<Power>   ::= <Primary> ("^" <Power>)?
 <Primary> ::= "(" <Expr> ")" | <Func> | <Var> | <Number>
 
 <Func>	  ::= <ID> "(" <Expr> ")"
