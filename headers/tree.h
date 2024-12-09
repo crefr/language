@@ -4,7 +4,8 @@
 enum elem_type{
     NUM = 0,
     OPR = 1,
-    VAR = 2
+    VAR = 2,
+    END = -1
 };
 
 enum oper{
@@ -18,7 +19,10 @@ enum oper{
     TAN,
     LN,
     LOG,
-    FAC
+    FAC,
+
+    LBRACKET,
+    RBRACKET
 };
 
 union value {
