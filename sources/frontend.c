@@ -10,9 +10,9 @@
 #include "logger.h"
 
 enum id_stat {
-    IS_VAR,
+    IS_IDR,
     IS_OPR,
-    IS_VAR_OR_OPR
+    IS_IDR_OR_OPR
 };
 
 static enum id_stat getIdName(const char ** src_str, char * buffer);
@@ -30,7 +30,7 @@ fe_context_t frontendInit(size_t token_num)
         tableInsert(&(frontend.oper_table), opers[oper_index].name, &(opers[oper_index].num), sizeof(opers[oper_index].num));
     }
 
-    frontend.var_table  = tableCtor(VAR_TABLE_SIZE);
+    frontend.idr_table  = tableCtor(IDR_TABLE_SIZE);
 
     return frontend;
 }
@@ -40,7 +40,7 @@ void frontendDtor(fe_context_t * frontend)
     assert(frontend);
 
     tableDtor(&(frontend->oper_table));
-    tableDtor(&(frontend->var_table));
+    tableDtor(&(frontend->idr_table));
 
     free(frontend->tokens);
     frontend->tokens = NULL;
@@ -62,8 +62,8 @@ void frontendDump(fe_context_t * frontend)
         if (cur_token.type == NUM){
             logPrint(LOG_DEBUG, "\t\t\ttype = NUM\n\t\t\tvalue = %lg\n", cur_token.val.number);
         }
-        else if (cur_token.type == VAR){
-            logPrint(LOG_DEBUG, "\t\t\ttype = VAR\n\t\t\tvalue = '%s'\n", frontend->vars[cur_token.val.var].name);
+        else if (cur_token.type == IDR){
+            logPrint(LOG_DEBUG, "\t\t\ttype = IDR\n\t\t\tvalue = '%s'\n", frontend->ids[cur_token.val.id].name);
         }
         else if (cur_token.type == OPR){
             logPrint(LOG_DEBUG, "\t\t\ttype = OPR\n\t\t\tvalue = '%s'\n", opers[cur_token.val.op]);
@@ -73,14 +73,14 @@ void frontendDump(fe_context_t * frontend)
         }
     }
 
-    logPrint(LOG_DEBUG, "\tvars size: %zu\n", frontend->tokens_size);
-    logPrint(LOG_DEBUG, "\tvars:\n");
+    logPrint(LOG_DEBUG, "\tids size: %zu\n", frontend->tokens_size);
+    logPrint(LOG_DEBUG, "\tids:\n");
 
-    for (size_t var_index = 0; var_index < frontend->var_size; var_index++){
-        logPrint(LOG_DEBUG, "\t\tvar #%zu:\n", var_index);
-        var_t cur_var = frontend->vars[var_index];
+    for (size_t id_index = 0; id_index < frontend->id_size; id_index++){
+        logPrint(LOG_DEBUG, "\t\tid #%zu:\n", id_index);
+        idr_t cur_id = frontend->ids[id_index];
 
-        logPrint(LOG_DEBUG, "\t\t\tname = '%s'\n\t\t\tvalue = %lg\n", cur_var.name, cur_var.value);
+        logPrint(LOG_DEBUG, "\t\t\tname = '%s'\n\t\t\tvalue = %lg\n", cur_id.name, cur_id.value);
     }
 
     logPrint(LOG_DEBUG, "----------frontend context dump end---------\n");
@@ -127,7 +127,7 @@ int lexicalAnalysis(fe_context_t * frontend, const char * code)
             name_t * identifier = NULL;
 
             // can be operator
-            if ((id_status == IS_VAR_OR_OPR || id_status == IS_OPR) && (identifier = tableLookup(&(frontend->oper_table), buffer)) != NULL){
+            if ((id_status == IS_IDR_OR_OPR || id_status == IS_OPR) && (identifier = tableLookup(&(frontend->oper_table), buffer)) != NULL){
                 logPrint(LOG_DEBUG_PLUS, "\tis an operator\n");
 
                 enum oper op_num = *((enum oper *)(identifier->data));
@@ -136,29 +136,29 @@ int lexicalAnalysis(fe_context_t * frontend, const char * code)
                 frontend->tokens[token_index].val.op = op_num;
             }
 
-            // so it is a variable
-            else if (id_status == IS_VAR || id_status == IS_VAR_OR_OPR){
-                logPrint(LOG_DEBUG_PLUS, "\tis a variable\n");
+            // so it is a idiable
+            else if (id_status == IS_IDR || id_status == IS_IDR_OR_OPR){
+                logPrint(LOG_DEBUG_PLUS, "\tis a idiable\n");
 
-                unsigned int var_index = 0;
+                unsigned int id_index = 0;
 
-                if ((identifier = tableLookup(&(frontend->var_table), buffer)) == NULL){
+                if ((identifier = tableLookup(&(frontend->idr_table), buffer)) == NULL){
                     logPrint(LOG_DEBUG_PLUS, "\t\tcreating new\n");
 
-                    var_index = frontend->var_size;
+                    id_index = frontend->id_size;
 
-                    strcpy(frontend->vars[var_index].name, buffer);
+                    strcpy(frontend->ids[id_index].name, buffer);
 
-                    frontend->var_size++;
+                    frontend->id_size++;
                 }
                 else {
                     logPrint(LOG_DEBUG_PLUS, "\t\talready exists\n");
 
-                    var_index = *((unsigned int *)(identifier->data));
+                    id_index = *((unsigned int *)(identifier->data));
                 }
 
-                frontend->tokens[token_index].type = VAR;
-                frontend->tokens[token_index].val.var = var_index;
+                frontend->tokens[token_index].type = IDR;
+                frontend->tokens[token_index].val.id = id_index;
             }
             else {
                 logPrint(LOG_RELEASE, "LEXIC ERROR: unknown opeator '%s'\n", buffer);
@@ -188,7 +188,7 @@ static enum id_stat getIdName(const char ** src_str, char * buffer)
         while((**src_str != '\0') && (**src_str != COMMENT_START) && (isalpha(**src_str) || **src_str == '_' || isdigit(**src_str)))
             *(buffer++) = *((*src_str)++);
 
-        return IS_VAR_OR_OPR;
+        return IS_IDR_OR_OPR;
     }
 
     while ((**src_str != '\0') && (**src_str != COMMENT_START) && (!isalpha(**src_str) && !isdigit(**src_str) && !isspace(**src_str) && **src_str != '_'))
@@ -234,7 +234,7 @@ static node_t * getNumber(fe_context_t * frontend);
 
 static node_t * getFunc(fe_context_t * frontend);
 
-static node_t * getVar(fe_context_t * frontend);
+static node_t * getid(fe_context_t * frontend);
 
 static void syntaxError(const char * expected, node_t * node);
 
@@ -308,7 +308,7 @@ static node_t * getAssign(fe_context_t * frontend)
 
     logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getAssign  (token #%zu)\n", (size_t)(token - frontend->tokens));
 
-    node_t * left_part = getVar(frontend);
+    node_t * left_part = getid(frontend);
     if (frontend->status != SUCCESS){
         return NULL;
     }
@@ -448,10 +448,10 @@ static node_t * getPrimary(fe_context_t * frontend)
     else if (frontend->status == HARD_ERROR)
         return NULL;
 
-    node_t * var = getVar(frontend);
+    node_t * id = getid(frontend);
 
     if (frontend->status == SUCCESS)
-        return var;
+        return id;
     else if (frontend->status == HARD_ERROR)
         return NULL;
 
@@ -481,23 +481,23 @@ static node_t * getNumber(fe_context_t * frontend)
     return NULL;
 }
 
-static node_t * getVar(fe_context_t * frontend)
+static node_t * getid(fe_context_t * frontend)
 {
     assert(frontend);
 
-    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getVar     (token #%zu)\n", (size_t)(token - frontend->tokens));
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getid     (token #%zu)\n", (size_t)(token - frontend->tokens));
 
-    if (!(token->type == VAR)){
+    if (!(token->type == IDR)){
         frontend->status  = SOFT_ERROR;
 
         return NULL;
     }
     frontend->status = SUCCESS;
 
-    node_t * var_node = token;
+    node_t * id_node = token;
     token++;
 
-    return var_node;
+    return id_node;
 }
 
 static node_t * getFunc(fe_context_t * frontend)

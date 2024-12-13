@@ -1,0 +1,24 @@
+TXT:1
+nametable {
+	0000: "x";
+	0001: "y";
+	0002: "z";
+	0003: "p";
+}
+{OPR:14
+{OPR:13
+{IDR:0}{NUM:1}}
+{OPR:14
+{OPR:13
+{IDR:1}{NUM:2}}
+{OPR:14
+{OPR:13
+{IDR:2}{NUM:3}}
+{OPR:14
+{OPR:13
+{IDR:3}{NUM:4}}
+{}}
+}
+}
+}
+

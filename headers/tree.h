@@ -4,7 +4,7 @@
 enum elem_type{
     NUM = 0,
     OPR = 1,
-    VAR = 2,
+    IDR = 2,
     END = -1
 };
 
@@ -29,7 +29,7 @@ enum oper{
 
 union value {
     double number;
-    unsigned int var;
+    unsigned int id;
     enum oper op;
 };
 

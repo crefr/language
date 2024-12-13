@@ -34,6 +34,10 @@ int main()
     printTreePrefix(&fe, tree);
     printf("\n");
 
+    FILE * out = fopen("out.txt", "w");
+    writeTreeToFile(&fe, tree, out);
+    fclose(out);
+
     frontendDtor(&fe);
 
     logExit();

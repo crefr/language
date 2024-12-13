@@ -10,10 +10,10 @@ const char COMMENT_START = '#';
 const char COMMENT_END   = '#';
 
 // const size_t MAX_TOKEN_NUM = 1024;
-const size_t MAX_VAR_NUM = 64;
+const size_t MAX_IDR_NUM = 64;
 const size_t NAME_MAX_LEN = 64;
 
-const size_t VAR_TABLE_SIZE = 128;
+const size_t IDR_TABLE_SIZE = 128;
 const size_t OPR_TABLE_SIZE = 128;
 
 const size_t ID_MAX_LEN = 64;
@@ -21,7 +21,7 @@ const size_t ID_MAX_LEN = 64;
 typedef struct {
     char name[NAME_MAX_LEN];
     double value;
-} var_t;
+} idr_t;
 
 typedef struct {
     const char * name;
@@ -44,10 +44,10 @@ typedef struct {
     node_t * cur_node;
 
     table_t oper_table;
-    table_t  var_table;
+    table_t   idr_table;
 
-    var_t vars[MAX_VAR_NUM];
-    unsigned int var_size;
+    idr_t ids[MAX_IDR_NUM];
+    unsigned int id_size;
 
     parser_status_t status;
 } fe_context_t;
@@ -93,5 +93,7 @@ node_t * parseCode(fe_context_t * frontend);
 
 
 char * readProgramText(const char * file_name);
+
+void writeTreeToFile(fe_context_t * fe, node_t * root, FILE * out_file);
 
 #endif

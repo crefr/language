@@ -24,8 +24,8 @@ void printTreePrefix(fe_context_t * fe, node_t * node)
         return;
     }
 
-    if (node->type == VAR){
-        printf("%s", fe->vars[node->val.var].name);
+    if (node->type == IDR){
+        printf("%s", fe->ids[node->val.id].name);
         return;
     }
 
@@ -126,7 +126,7 @@ static void nodeMakeDot(fe_context_t * fe, FILE * dot_file, node_t * node, node_
         nodeMakeDot(fe, dot_file, node->right, node);
 }
 
-const uint32_t VAR_COLOR = 0xFFAAAAFF;
+const uint32_t IDR_COLOR = 0xFFAAAAFF;
 const uint32_t NUM_COLOR = 0xAAAAFFFF;
 const uint32_t OPR_COLOR = 0xAAFFAAFF;
 
@@ -147,9 +147,9 @@ static void dotPrintNode(fe_context_t * fe, FILE * dot_file, node_t * node)
         sprintf(elem_str, "type = OPR, val = '%s'", opers[node->val.op].name);
         color_to_dump = OPR_COLOR;
     }
-    else if (node->type == VAR){
-        sprintf(elem_str, "type = VAR, val = '%s'", fe->vars[node->val.op].name);
-        color_to_dump = VAR_COLOR;
+    else if (node->type == IDR){
+        sprintf(elem_str, "type = IDR, val = '%s'", fe->ids[node->val.op].name);
+        color_to_dump = IDR_COLOR;
     }
 
     fprintf(dot_file, "node_%zu"
