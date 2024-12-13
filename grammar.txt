@@ -1,4 +1,4 @@
-<RESULT>  ::= <Assign>
+<RESULT>  ::= <Chain>
 
 <Chain>   ::= (<Assign> ";")*
 

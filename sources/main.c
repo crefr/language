@@ -9,8 +9,8 @@
 #include "frontend.h"
 #include "tree.h"
 
-const size_t MAX_TOKEN_NUM = 1024;
-const size_t MAX_CODE_LEN  = 1024;
+const size_t MAX_CODE_LEN   = 1024;
+const size_t MAX_TOKEN_NUM  = 1024;
 
 int main()
 {
@@ -21,9 +21,7 @@ int main()
 
     fe_context_t fe = frontendInit(MAX_TOKEN_NUM);
 
-    char str[MAX_CODE_LEN] = "";
-
-    scanf("%[^\n]", str);
+    char * str = readProgramText("program.txt");
 
     lexicalAnalysis(&fe, str);
     frontendDump(&fe);
@@ -39,6 +37,7 @@ int main()
     frontendDtor(&fe);
 
     logExit();
+    free(str);
 
     return 0;
 }

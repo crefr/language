@@ -41,7 +41,7 @@ endif
 CFLAGS := -I./$(HEADDIR) -I./$(BINTREEHEADDIR) $(CFLAGS)
 
 ALLDEPS = $(HEADDIR)logger.h $(HEADDIR)hashtable.h $(HEADDIR)frontend.h $(HEADDIR)tree.h
-OBJECTS = main.o logger.o frontend.o tree.o
+OBJECTS = main.o logger.o frontend.o tree.o frontend_io.o
 OBJECTS_WITH_DIR 	 = $(addprefix $(OBJDIR),$(OBJECTS))
 
 TABLELIB = hash-table/Obj/hashtable.a

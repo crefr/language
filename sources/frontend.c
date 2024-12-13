@@ -267,24 +267,39 @@ static node_t * getChain(fe_context_t * frontend)
 
     logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getChain   (token #%zu)\n", (size_t)(token - frontend->tokens));
 
-    node_t * node = NULL;
-    node_t * last = NULL;
+    node_t * cur = getAssign(frontend);
 
-    while ((last = getAssign(frontend)) != NULL){
+    if (!(token->type == OPR && token->val.op == SEP)){
+        frontend->status = HARD_ERROR;
+
+        return NULL;
+    }
+
+    node_t * tree = token;
+    tree->left = cur;
+    token++;
+
+    node_t * last = tree;
+
+
+    while ((cur = getAssign(frontend)) != NULL){
         if (!(token->type == OPR && token->val.op == SEP)){
             frontend->status = HARD_ERROR;
 
             return NULL;
         }
 
-        token->left  = node;
-        token->right = last;
+        token->left = cur;
+        token->right = NULL;
 
-        node = token;
+        last->right = token;
+
+        last = token;
+
         token++;
     }
 
-    return node;
+    return tree;
 }
 
 static node_t * getAssign(fe_context_t * frontend)

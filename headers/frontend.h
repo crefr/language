@@ -91,4 +91,7 @@ int lexicalAnalysis(fe_context_t * frontend, const char * code);
 
 node_t * parseCode(fe_context_t * frontend);
 
+
+char * readProgramText(const char * file_name);
+
 #endif
