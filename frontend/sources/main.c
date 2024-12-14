@@ -23,7 +23,12 @@ int main(int argc, char ** argv)
     if (argc > 1 && (strcmp(argv[1], "-1") == 0)){
         fe_context_t fe = frontendInit(MAX_TOKEN_NUM);
 
-        node_t * tree = readTreeFromIR(&fe, "../out.txt");
+        IR_context ir = {};         //TODO: GET RID OF THAT
+        ir.cur_node = fe.cur_node;
+        ir.ids = fe.ids;
+        ir.id_size = fe.id_size;
+
+        node_t * tree = readTreeFromIR(&ir, "../out.txt");
 
         treeDumpGraph(&fe, tree);
         frontendDump(&fe);
@@ -51,7 +56,13 @@ int main(int argc, char ** argv)
     printf("\n");
 
     FILE * out = fopen("../out.txt", "w");
-    writeTreeToFile(&fe, tree, out);
+
+    IR_context ir = {};         // TODO: GET RID OF THAT
+    ir.cur_node = fe.cur_node;
+    ir.ids = fe.ids;
+    ir.id_size = fe.id_size;
+
+    writeTreeToFile(&ir, tree, out);
     fclose(out);
 
     frontendDtor(&fe);

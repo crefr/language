@@ -5,6 +5,7 @@
 
 #include "hashtable.h"
 #include "tree.h"
+#include "IR_handler.h"
 
 const char COMMENT_START = '#';
 const char COMMENT_END   = '#';
@@ -17,19 +18,6 @@ const size_t IDR_TABLE_SIZE = 128;
 const size_t OPR_TABLE_SIZE = 128;
 
 const size_t ID_MAX_LEN = 64;
-
-typedef struct {
-    char name[NAME_MAX_LEN];
-    double value;
-} idr_t;
-
-typedef struct {
-    const char * name;
-    enum oper num;
-
-    bool binary;
-    bool commutative;
-} oper_t;
 
 typedef enum {
     SUCCESS = 0,
@@ -52,26 +40,6 @@ typedef struct {
     parser_status_t status;
 } fe_context_t;
 
-const oper_t opers[] = {
-    {.name = "+"  , .num = ADD, .binary = true,  .commutative = true },
-    {.name = "-"  , .num = SUB, .binary = true,  .commutative = false},
-    {.name = "*"  , .num = MUL, .binary = true,  .commutative = true },
-    {.name = "/"  , .num = DIV, .binary = true,  .commutative = false},
-    {.name = "^"  , .num = POW, .binary = true,  .commutative = false},
-    {.name = "sin", .num = SIN, .binary = false, .commutative = false},
-    {.name = "cos", .num = COS, .binary = false, .commutative = false},
-    {.name = "tan", .num = TAN, .binary = false, .commutative = false},
-    {.name = "ln" , .num = LN , .binary = false, .commutative = false},
-    {.name = "log", .num = LOG, .binary = true,  .commutative = false},
-    {.name = "!"  , .num = FAC, .binary = false, .commutative = false},
-
-    {.name = "("  , .num = LBRACKET, .binary = false, .commutative = false},
-    {.name = ")"  , .num = RBRACKET, .binary = false, .commutative = false},
-    {.name = "="  , .num = ASSIGN  , .binary = true , .commutative = false},
-    {.name = ";"  , .num = SEP     , .binary = true , .commutative = false},
-};
-const size_t opers_size = sizeof(opers) / sizeof(*opers);
-
 /// @brief initialise frontend context
 fe_context_t frontendInit(size_t token_num);
 
@@ -90,12 +58,5 @@ void treeMakeDot(fe_context_t * fe, node_t * node, FILE * dot_file);
 int lexicalAnalysis(fe_context_t * frontend, const char * code);
 
 node_t * parseCode(fe_context_t * frontend);
-
-
-char * readProgramText(const char * file_name);
-
-void writeTreeToFile(fe_context_t * fe, node_t * root, FILE * out_file);
-
-node_t * readTreeFromIR(fe_context_t * fe, const char * file_name);
 
 #endif

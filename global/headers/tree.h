@@ -30,6 +30,34 @@ enum oper{
     NO_OP
 };
 
+typedef struct {
+    const char * name;
+    enum oper num;
+
+    bool binary;
+    bool commutative;
+} oper_t;
+
+const oper_t opers[] = {
+    {.name = "+"  , .num = ADD, .binary = true,  .commutative = true },
+    {.name = "-"  , .num = SUB, .binary = true,  .commutative = false},
+    {.name = "*"  , .num = MUL, .binary = true,  .commutative = true },
+    {.name = "/"  , .num = DIV, .binary = true,  .commutative = false},
+    {.name = "^"  , .num = POW, .binary = true,  .commutative = false},
+    {.name = "sin", .num = SIN, .binary = false, .commutative = false},
+    {.name = "cos", .num = COS, .binary = false, .commutative = false},
+    {.name = "tan", .num = TAN, .binary = false, .commutative = false},
+    {.name = "ln" , .num = LN , .binary = false, .commutative = false},
+    {.name = "log", .num = LOG, .binary = true,  .commutative = false},
+    {.name = "!"  , .num = FAC, .binary = false, .commutative = false},
+
+    {.name = "("  , .num = LBRACKET, .binary = false, .commutative = false},
+    {.name = ")"  , .num = RBRACKET, .binary = false, .commutative = false},
+    {.name = "="  , .num = ASSIGN  , .binary = true , .commutative = false},
+    {.name = ";"  , .num = SEP     , .binary = true , .commutative = false},
+};
+const size_t opers_size = sizeof(opers) / sizeof(*opers);
+
 union value {
     double number;
     unsigned int id;
