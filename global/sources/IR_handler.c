@@ -57,6 +57,7 @@ node_t * readTreeFromIR(tree_context_t * tree, const char * file_name)
     size_t file_len = getFileSize(file_name) + 1;
 
     FILE * file = fopen(file_name, "r");
+    assert(file);
 
     char * buffer = (char *)calloc(file_len, sizeof(*buffer));
     fread(buffer, sizeof(*buffer), file_len, file);

@@ -1,8 +1,16 @@
 language.exe
+
 Obj/
 frontend/Obj/
+backend/Obj/
+
 frontend/frontend.exe
 frontend.exe
+
 backend.exe
+
 logs/
+backend_logs/
+frontend_logs/
+
 .vscode/
