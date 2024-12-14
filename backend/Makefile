@@ -1,4 +1,4 @@
-FILENAME = ../frontend.exe
+FILENAME = ../backend.exe
 OBJDIR 		   = Obj/
 SRCDIR 		   = sources/
 HEADDIR 	   = headers/
@@ -44,11 +44,11 @@ endif
 CFLAGS := -I./$(HEADDIR) -I./$(GLOBALHEADDIR) $(CFLAGS)
 
 GLOBALDEPS = $(GLOBALHEADDIR)logger.h $(GLOBALHEADDIR)hashtable.h $(GLOBALHEADDIR)tree.h $(GLOBALHEADDIR)IR_handler.h
-LOCALDEPS  = $(HEADDIR)frontend.h
+LOCALDEPS  = $(HEADDIR)backend.h
 
 ALLDEPS    = $(LOCALDEPS) $(GLOBALDEPS)
 
-LOCAL_OBJECTS  = main.o frontend.o
+LOCAL_OBJECTS  = main.o backend.o
 LOCAL_OBJECTS_WITH_DIR = $(addprefix $(OBJDIR),$(LOCAL_OBJECTS))
 
 GLOBAL_OBJECTS = logger.o tree.o IR_handler.o

@@ -3,5 +3,6 @@ Obj/
 frontend/Obj/
 frontend/frontend.exe
 frontend.exe
+backend.exe
 logs/
 .vscode/
