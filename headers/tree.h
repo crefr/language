@@ -7,6 +7,7 @@ enum elem_type{
     IDR = 2,
     END = -1
 };
+const size_t MAX_ELEM_TYPE_NAME_LEN = 10;
 
 enum oper{
     ADD = 0,
@@ -24,7 +25,9 @@ enum oper{
     LBRACKET,
     RBRACKET,
     ASSIGN,
-    SEP
+    SEP,
+
+    NO_OP
 };
 
 union value {

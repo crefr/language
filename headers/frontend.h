@@ -44,7 +44,7 @@ typedef struct {
     node_t * cur_node;
 
     table_t oper_table;
-    table_t   idr_table;
+    table_t  idr_table;
 
     idr_t ids[MAX_IDR_NUM];
     unsigned int id_size;
@@ -95,5 +95,7 @@ node_t * parseCode(fe_context_t * frontend);
 char * readProgramText(const char * file_name);
 
 void writeTreeToFile(fe_context_t * fe, node_t * root, FILE * out_file);
+
+node_t * readTreeFromIR(fe_context_t * fe, const char * file_name);
 
 #endif

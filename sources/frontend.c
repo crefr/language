@@ -24,6 +24,8 @@ fe_context_t frontendInit(size_t token_num)
     fe_context_t frontend = {};
 
     frontend.tokens = (node_t *)calloc(token_num, sizeof(node_t));
+    frontend.cur_node = frontend.tokens;
+
 
     frontend.oper_table = tableCtor(OPR_TABLE_SIZE);
     for (size_t oper_index = 0; oper_index < opers_size; oper_index++){
