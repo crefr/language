@@ -21,11 +21,12 @@ int main(int argc, char ** argv)
     logCancelBuffer();
 
     if (argc > 1 && (strcmp(argv[1], "-1") == 0)){
-       fe_context_t fe = frontendInit(MAX_TOKEN_NUM);
+        fe_context_t fe = frontendInit(MAX_TOKEN_NUM);
 
         node_t * tree = readTreeFromIR(&fe, "out.txt");
 
         treeDumpGraph(&fe, tree);
+        frontendDump(&fe);
 
         frontendDtor(&fe);
 

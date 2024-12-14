@@ -75,7 +75,7 @@ void frontendDump(fe_context_t * frontend)
         }
     }
 
-    logPrint(LOG_DEBUG, "\tids size: %zu\n", frontend->tokens_size);
+    logPrint(LOG_DEBUG, "\tids size: %zu\n", frontend->id_size);
     logPrint(LOG_DEBUG, "\tids:\n");
 
     for (size_t id_index = 0; id_index < frontend->id_size; id_index++){
@@ -138,9 +138,9 @@ int lexicalAnalysis(fe_context_t * frontend, const char * code)
                 frontend->tokens[token_index].val.op = op_num;
             }
 
-            // so it is a idiable
+            // so it is a id
             else if (id_status == IS_IDR || id_status == IS_IDR_OR_OPR){
-                logPrint(LOG_DEBUG_PLUS, "\tis a idiable\n");
+                logPrint(LOG_DEBUG_PLUS, "\tis a identifier\n");
 
                 unsigned int id_index = 0;
 
@@ -152,6 +152,8 @@ int lexicalAnalysis(fe_context_t * frontend, const char * code)
                     strcpy(frontend->ids[id_index].name, buffer);
 
                     frontend->id_size++;
+
+                    tableInsert(&frontend->idr_table, buffer, &id_index, sizeof(id_index));
                 }
                 else {
                     logPrint(LOG_DEBUG_PLUS, "\t\talready exists\n");
@@ -236,7 +238,7 @@ static node_t * getNumber(fe_context_t * frontend);
 
 static node_t * getFunc(fe_context_t * frontend);
 
-static node_t * getid(fe_context_t * frontend);
+static node_t * getId(fe_context_t * frontend);
 
 static void syntaxError(const char * expected, node_t * node);
 
@@ -310,7 +312,7 @@ static node_t * getAssign(fe_context_t * frontend)
 
     logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getAssign  (token #%zu)\n", (size_t)(token - frontend->tokens));
 
-    node_t * left_part = getid(frontend);
+    node_t * left_part = getId(frontend);
     if (frontend->status != SUCCESS){
         return NULL;
     }
@@ -450,7 +452,7 @@ static node_t * getPrimary(fe_context_t * frontend)
     else if (frontend->status == HARD_ERROR)
         return NULL;
 
-    node_t * id = getid(frontend);
+    node_t * id = getId(frontend);
 
     if (frontend->status == SUCCESS)
         return id;
@@ -483,11 +485,11 @@ static node_t * getNumber(fe_context_t * frontend)
     return NULL;
 }
 
-static node_t * getid(fe_context_t * frontend)
+static node_t * getId(fe_context_t * frontend)
 {
     assert(frontend);
 
-    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getid     (token #%zu)\n", (size_t)(token - frontend->tokens));
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getId      (token #%zu)\n", (size_t)(token - frontend->tokens));
 
     if (!(token->type == IDR)){
         frontend->status  = SOFT_ERROR;
