@@ -23,14 +23,14 @@ int main(int argc, char ** argv)
     if (argc > 1 && (strcmp(argv[1], "-1") == 0)){
         fe_context_t fe = frontendInit(MAX_TOKEN_NUM);
 
-        IR_context ir = {};         //TODO: GET RID OF THAT
-        ir.cur_node = fe.cur_node;
-        ir.ids = fe.ids;
-        ir.id_size = fe.id_size;
+        tree_context_t tr = {};         //TODO: GET RID OF THAT
+        tr.cur_node = fe.cur_node;
+        tr.ids = fe.ids;
+        tr.id_size = fe.id_size;
 
-        node_t * tree = readTreeFromIR(&ir, "../out.txt");
+        node_t * tree = readTreeFromIR(&tr, "../out.txt");
 
-        treeDumpGraph(&fe, tree);
+        treeDumpGraph(&tr, tree);
         frontendDump(&fe);
 
         frontendDtor(&fe);
@@ -47,22 +47,23 @@ int main(int argc, char ** argv)
     lexicalAnalysis(&fe, str);
     frontendDump(&fe);
 
+    tree_context_t tr = {};         // TODO: GET RID OF THAT
+    tr.cur_node = fe.cur_node;
+    tr.ids = fe.ids;
+    tr.id_size = fe.id_size;
+
     node_t * tree = parseCode(&fe);
     assert(tree);
 
-    treeDumpGraph(&fe, tree);
+    treeDumpGraph(&tr, tree);
 
-    printTreePrefix(&fe, tree);
+    printTreePrefix(&tr, tree);
     printf("\n");
 
     FILE * out = fopen("../out.txt", "w");
 
-    IR_context ir = {};         // TODO: GET RID OF THAT
-    ir.cur_node = fe.cur_node;
-    ir.ids = fe.ids;
-    ir.id_size = fe.id_size;
 
-    writeTreeToFile(&ir, tree, out);
+    writeTreeToFile(&tr, tree, out);
     fclose(out);
 
     frontendDtor(&fe);

@@ -75,4 +75,24 @@ typedef struct node {
     struct node * right;
 } node_t;
 
+const size_t NAME_MAX_LENGTH = 64;
+
+typedef struct {
+    char name[NAME_MAX_LENGTH];
+    double value;
+} idr_t;
+
+typedef struct {
+    node_t * cur_node;
+
+    idr_t * ids;
+    unsigned int id_size;
+} tree_context_t;
+
+void printTreePrefix(tree_context_t * tr, node_t * node);
+
+void treeDumpGraph(tree_context_t * tr, node_t * root_node);
+
+void treeMakeDot(tree_context_t * tr, node_t * node, FILE * dot_file);
+
 #endif

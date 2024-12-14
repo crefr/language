@@ -48,12 +48,6 @@ void frontendDtor(fe_context_t * frontend);
 
 void frontendDump(fe_context_t * frontend);
 
-void printTreePrefix(fe_context_t * fe, node_t * node);
-
-void treeDumpGraph(fe_context_t * fe, node_t * root_node);
-
-void treeMakeDot(fe_context_t * fe, node_t * node, FILE * dot_file);
-
 /// @brief do lexical analysis of the source code, returns 0 if succeeded
 int lexicalAnalysis(fe_context_t * frontend, const char * code);
 

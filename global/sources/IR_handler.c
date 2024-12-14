@@ -14,17 +14,17 @@ const char * const SIGN_STRING  = "TXT:1";
 const size_t SIGN_MAX_LEN = 32;
 const size_t BUFFER_LEN   = 32;
 
-static void writeNameTable(IR_context * ir, FILE * out_file);
+static void writeNameTable(tree_context_t * tree, FILE * out_file);
 
-static void writeTreeToFileRecursive(IR_context * ir, node_t * node, FILE * out_file, const size_t tab_num);
+static void writeTreeToFileRecursive(tree_context_t * tree, node_t * node, FILE * out_file, const size_t tab_num);
 
 static size_t getFileSize(const char * file_name);
 
-static int readSignature(IR_context * ir, const char ** cur_pos);
+static int readSignature(tree_context_t * tree, const char ** cur_pos);
 
-static node_t * readTreeFromIRrecursive(IR_context * ir, const char ** cur_pos);
+static node_t * readTreeFromIRrecursive(tree_context_t * tree, const char ** cur_pos);
 
-static int readNameTable(IR_context * ir, const char ** cur_pos);
+static int readNameTable(tree_context_t * tree, const char ** cur_pos);
 
 char * readProgramText(const char * file_name)
 {
@@ -47,10 +47,10 @@ char * readProgramText(const char * file_name)
     return code_str;
 }
 
-node_t * readTreeFromIR(IR_context * ir, const char * file_name)
+node_t * readTreeFromIR(tree_context_t * tree, const char * file_name)
 {
     assert(file_name);
-    assert(ir);
+    assert(tree);
 
     logPrint(LOG_DEBUG, "reading tree from IR\n");
 
@@ -66,7 +66,7 @@ node_t * readTreeFromIR(IR_context * ir, const char * file_name)
     const char * cur_pos = buffer;
 
     // checking signature
-    if (! readSignature(ir, &cur_pos)){
+    if (! readSignature(tree, &cur_pos)){
         logPrint(LOG_RELEASE, "ERROR: invalid signature\n");
         fprintf(stderr, "ERROR: invalid signature\n");
 
@@ -74,7 +74,7 @@ node_t * readTreeFromIR(IR_context * ir, const char * file_name)
     }
 
     // reading name table
-    if (! readNameTable(ir, &cur_pos)){
+    if (! readNameTable(tree, &cur_pos)){
         logPrint(LOG_RELEASE, "ERROR: cannot read name table\n");
         fprintf(stderr, "ERROR: cannot read name table\n");
 
@@ -82,16 +82,16 @@ node_t * readTreeFromIR(IR_context * ir, const char * file_name)
     }
 
     // reading tree
-    node_t * root = readTreeFromIRrecursive(ir, &cur_pos);
+    node_t * root = readTreeFromIRrecursive(tree, &cur_pos);
 
     free(buffer);
 
     return root;
 }
 
-static int readSignature(IR_context * ir, const char ** cur_pos)
+static int readSignature(tree_context_t * tree, const char ** cur_pos)
 {
-    assert(ir);
+    assert(tree);
     assert(cur_pos);
     assert(*cur_pos);
 
@@ -109,9 +109,9 @@ static int readSignature(IR_context * ir, const char ** cur_pos)
     return 0;
 }
 
-static int readNameTable(IR_context * ir, const char ** cur_pos)
+static int readNameTable(tree_context_t * tree, const char ** cur_pos)
 {
-    assert(ir);
+    assert(tree);
     assert(cur_pos);
     assert(*cur_pos);
 
@@ -137,8 +137,8 @@ static int readNameTable(IR_context * ir, const char ** cur_pos)
 
         logPrint(LOG_DEBUG, "scanned name: %04zu, \"%s\";\n", index, name_buf);
 
-        strcpy(ir->ids[index].name, name_buf);
-        ir->id_size++;
+        strcpy(tree->ids[index].name, name_buf);
+        tree->id_size++;
 
         shift = 0;
         sscanf(*cur_pos, " }%n", &shift);
@@ -150,9 +150,9 @@ static int readNameTable(IR_context * ir, const char ** cur_pos)
     return 1;
 }
 
-static node_t * readTreeFromIRrecursive(IR_context * ir, const char ** cur_pos)
+static node_t * readTreeFromIRrecursive(tree_context_t * tree, const char ** cur_pos)
 {
-    assert(ir);
+    assert(tree);
     assert(cur_pos);
     assert(*cur_pos);
 
@@ -179,8 +179,8 @@ static node_t * readTreeFromIRrecursive(IR_context * ir, const char ** cur_pos)
         sscanf(*cur_pos, " %lg }%n", &number, &shift);
         *cur_pos += shift;
 
-        node_t * num_node = ir->cur_node;
-        ir->cur_node++;
+        node_t * num_node = tree->cur_node;
+        tree->cur_node++;
 
         num_node->type = NUM;
         num_node->val.number = number;
@@ -197,8 +197,8 @@ static node_t * readTreeFromIRrecursive(IR_context * ir, const char ** cur_pos)
         sscanf(*cur_pos, " %u }%n", &id_index, &shift);
         *cur_pos += shift;
 
-        node_t * idr_node = ir->cur_node;
-        ir->cur_node++;
+        node_t * idr_node = tree->cur_node;
+        tree->cur_node++;
 
         idr_node->type = IDR;
         idr_node->val.id = id_index;
@@ -215,14 +215,14 @@ static node_t * readTreeFromIRrecursive(IR_context * ir, const char ** cur_pos)
     sscanf(*cur_pos, " %d %n", &op_num, &shift);
     *cur_pos += shift;
 
-    node_t * opr_node = ir->cur_node;
-    ir->cur_node++;
+    node_t * opr_node = tree->cur_node;
+    tree->cur_node++;
 
     opr_node->type = OPR;
     opr_node->val.op = op_num;
 
-    opr_node->left  = readTreeFromIRrecursive(ir, cur_pos);
-    opr_node->right = readTreeFromIRrecursive(ir, cur_pos);
+    opr_node->left  = readTreeFromIRrecursive(tree, cur_pos);
+    opr_node->right = readTreeFromIRrecursive(tree, cur_pos);
 
     sscanf(*cur_pos, " }%n", &shift);
     *cur_pos += shift;
@@ -230,39 +230,39 @@ static node_t * readTreeFromIRrecursive(IR_context * ir, const char ** cur_pos)
     return opr_node;
 }
 
-void writeTreeToFile(IR_context * ir, node_t * root, FILE * out_file)
+void writeTreeToFile(tree_context_t * tree, node_t * root, FILE * out_file)
 {
-    assert(ir);
+    assert(tree);
     assert(root);
     assert(out_file);
 
     fprintf(out_file, SIGN_STRING);
     fprintf(out_file, "\n");
 
-    writeNameTable(ir, out_file);
+    writeNameTable(tree, out_file);
 
-    writeTreeToFileRecursive(ir, root, out_file, 0);
+    writeTreeToFileRecursive(tree, root, out_file, 0);
 
     fprintf(out_file, "\n");
 }
 
-static void writeNameTable(IR_context * ir, FILE * out_file)
+static void writeNameTable(tree_context_t * tree, FILE * out_file)
 {
-    assert(ir);
+    assert(tree);
     assert(out_file);
 
     fprintf(out_file, "nametable {\n");
 
-    for (size_t id_index = 0; id_index < ir->id_size; id_index++){
-        fprintf(out_file, "\t%04zu: \"%s\";\n", id_index, ir->ids[id_index].name);
+    for (size_t id_index = 0; id_index < tree->id_size; id_index++){
+        fprintf(out_file, "\t%04zu: \"%s\";\n", id_index, tree->ids[id_index].name);
     }
 
     fprintf(out_file, "}\n");
 }
 
-static void writeTreeToFileRecursive(IR_context * ir, node_t * node, FILE * out_file, const size_t tab_num)
+static void writeTreeToFileRecursive(tree_context_t * tree, node_t * node, FILE * out_file, const size_t tab_num)
 {
-    assert(ir);
+    assert(tree);
     assert(out_file);
 
     if (node == NULL){
@@ -284,8 +284,8 @@ static void writeTreeToFileRecursive(IR_context * ir, node_t * node, FILE * out_
 
     fprintf(out_file, "{OPR:%d\n", node->val.op);
 
-    writeTreeToFileRecursive(ir, node->left , out_file, tab_num + 1);
-    writeTreeToFileRecursive(ir, node->right, out_file, tab_num + 1);
+    writeTreeToFileRecursive(tree, node->left , out_file, tab_num + 1);
+    writeTreeToFileRecursive(tree, node->right, out_file, tab_num + 1);
 
     fprintf(out_file, "}\n");
 }

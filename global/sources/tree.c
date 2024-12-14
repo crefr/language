@@ -3,13 +3,12 @@
 #include <assert.h>
 #include <stdint.h>
 
-#include "frontend.h"
 #include "tree.h"
 #include "logger.h"
 
-void printTreePrefix(fe_context_t * fe, node_t * node)
+void printTreePrefix(tree_context_t * tree, node_t * node)
 {
-    assert(fe);
+    assert(tree);
 
     if (node == NULL)
         return;
@@ -25,7 +24,7 @@ void printTreePrefix(fe_context_t * fe, node_t * node)
     }
 
     if (node->type == IDR){
-        printf("%s", fe->ids[node->val.id].name);
+        printf("%s", tree->ids[node->val.id].name);
         return;
     }
 
@@ -34,18 +33,18 @@ void printTreePrefix(fe_context_t * fe, node_t * node)
     printf("(%s", oper.name);
 
     printf("(");
-    printTreePrefix(fe, node->left);
+    printTreePrefix(tree, node->left);
     printf(")");
 
     if (oper.binary){
         printf("(");
-        printTreePrefix(fe, node->right);
+        printTreePrefix(tree, node->right);
         printf(")");
     }
     printf(")");
 }
 
-void treeDumpGraph(fe_context_t * fe, node_t * root_node)
+void treeDumpGraph(tree_context_t * tree, node_t * root_node)
 {
     assert(root_node);
 
@@ -65,7 +64,7 @@ void treeDumpGraph(fe_context_t * fe, node_t * root_node)
     sprintf(img_file_name, "logs/imgs/graph_%zu.svg", dump_count);
 
     FILE * dot_file = fopen(dot_file_name, "w");
-    treeMakeDot(fe, root_node, dot_file);
+    treeMakeDot(tree, root_node, dot_file);
     fclose(dot_file);
 
     char sys_dot_cmd[MAX_FILE_NAME] = "";
@@ -84,9 +83,9 @@ void treeDumpGraph(fe_context_t * fe, node_t * root_node)
     dump_count++;
 }
 
-static void nodeMakeDot(fe_context_t * fe, FILE * dot_file, node_t * node, node_t * parent);
+static void nodeMakeDot(tree_context_t * tree, FILE * dot_file, node_t * node, node_t * parent);
 
-void treeMakeDot(fe_context_t * fe, node_t * node, FILE * dot_file)
+void treeMakeDot(tree_context_t * tree, node_t * node, FILE * dot_file)
 {
     assert(node);
     assert(dot_file);
@@ -94,21 +93,21 @@ void treeMakeDot(fe_context_t * fe, node_t * node, FILE * dot_file)
     fprintf(dot_file, "digraph {\n");
     fprintf(dot_file, "node [style=filled,color=\"#000000\"]\n");
 
-    nodeMakeDot(fe, dot_file, node, NULL);
+    nodeMakeDot(tree, dot_file, node, NULL);
 
     fprintf(dot_file, "}\n");
 }
 
-static void dotPrintNode(fe_context_t * fe, FILE * dot_file, node_t * node);
+static void dotPrintNode(tree_context_t * tree, FILE * dot_file, node_t * node);
 
-static void nodeMakeDot(fe_context_t * fe, FILE * dot_file, node_t * node, node_t * parent)
+static void nodeMakeDot(tree_context_t * tree, FILE * dot_file, node_t * node, node_t * parent)
 {
     assert(node);
     assert(dot_file);
 
     size_t node_num = (size_t)node;
 
-    dotPrintNode(fe, dot_file, node);
+    dotPrintNode(tree, dot_file, node);
 
     if (parent != NULL){
         size_t node_parent_num = (size_t)(parent);
@@ -120,17 +119,17 @@ static void nodeMakeDot(fe_context_t * fe, FILE * dot_file, node_t * node, node_
     }
 
     if (node->left  != NULL)
-        nodeMakeDot(fe, dot_file, node->left, node);
+        nodeMakeDot(tree, dot_file, node->left, node);
 
     if (node->right != NULL)
-        nodeMakeDot(fe, dot_file, node->right, node);
+        nodeMakeDot(tree, dot_file, node->right, node);
 }
 
 const uint32_t IDR_COLOR = 0xFFAAAAFF;
 const uint32_t NUM_COLOR = 0xAAAAFFFF;
 const uint32_t OPR_COLOR = 0xAAFFAAFF;
 
-static void dotPrintNode(fe_context_t * fe, FILE * dot_file, node_t * node)
+static void dotPrintNode(tree_context_t * tree, FILE * dot_file, node_t * node)
 {
     size_t node_num = (size_t)node;
 
@@ -148,7 +147,7 @@ static void dotPrintNode(fe_context_t * fe, FILE * dot_file, node_t * node)
         color_to_dump = OPR_COLOR;
     }
     else if (node->type == IDR){
-        sprintf(elem_str, "type = IDR, val = '%s'", fe->ids[node->val.op].name);
+        sprintf(elem_str, "type = IDR, val = '%s'", tree->ids[node->val.op].name);
         color_to_dump = IDR_COLOR;
     }
 
