@@ -1,4 +1,7 @@
 language.exe
 Obj/
+frontend/Obj/
+frontend/frontend.exe
+frontend.exe
 logs/
 .vscode/

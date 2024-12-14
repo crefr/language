@@ -1,7 +1,11 @@
-FILENAME = language.exe
+FILENAME = frontend.exe
 OBJDIR 		   = Obj/
 SRCDIR 		   = sources/
 HEADDIR 	   = headers/
+
+GLOBALOBJDIR   = Obj/
+GLOBALSRCDIR   = ../global/sources/
+GLOBALHEADDIR  = ../global/headers/
 
 CC = g++
 BUILD  = LINUX
@@ -37,21 +41,31 @@ else ifeq ($(BUILD),RELEASE)
 	CFLAGS = $(CFLAGS_RELEASE)
 endif
 
-# CFLAGS_TEMP = $(CFLAGS)
-CFLAGS := -I./$(HEADDIR) -I./$(BINTREEHEADDIR) $(CFLAGS)
+CFLAGS := -I./$(HEADDIR) -I./$(GLOBALHEADDIR) $(CFLAGS)
 
-ALLDEPS = $(HEADDIR)logger.h $(HEADDIR)hashtable.h $(HEADDIR)frontend.h $(HEADDIR)tree.h
-OBJECTS = main.o logger.o frontend.o tree.o frontend_io.o
-OBJECTS_WITH_DIR 	 = $(addprefix $(OBJDIR),$(OBJECTS))
+GLOBALDEPS = $(GLOBALHEADDIR)logger.h $(GLOBALHEADDIR)hashtable.h $(GLOBALHEADDIR)tree.h
+LOCALDEPS  = $(HEADDIR)frontend.h
 
-TABLELIB = hash-table/Obj/hashtable.a
-TABLELIBFOLDER = hash-table/
+ALLDEPS    = $(LOCALDEPS) $(GLOBALDEPS)
 
-$(FILENAME): $(OBJECTS_WITH_DIR) $(TABLELIB)
+LOCAL_OBJECTS  = main.o frontend.o frontend_io.o
+LOCAL_OBJECTS_WITH_DIR = $(addprefix $(OBJDIR),$(LOCAL_OBJECTS))
+
+GLOBAL_OBJECTS = logger.o tree.o
+GLOBAL_OBJECTS_WITH_DIR = $(addprefix $(GLOBALOBJDIR),$(GLOBAL_OBJECTS))
+
+TABLELIB = ../hash-table/Obj/hashtable.a
+TABLELIBFOLDER = ../hash-table/
+
+$(FILENAME): $(LOCAL_OBJECTS_WITH_DIR) $(GLOBAL_OBJECTS_WITH_DIR) $(TABLELIB)
 	$(CC) $(CFLAGS) $^ -o $@
 
-$(OBJECTS_WITH_DIR): $(OBJDIR)%.o: $(SRCDIR)%.c $(ALLDEPS)
+$(LOCAL_OBJECTS_WITH_DIR): $(OBJDIR)%.o: $(SRCDIR)%.c $(ALLDEPS)
 	mkdir -p $(OBJDIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(GLOBAL_OBJECTS_WITH_DIR): $(GLOBALOBJDIR)%.o: $(GLOBALSRCDIR)%.c $(ALLDEPS)
+	mkdir -p $(GLOBALOBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(TABLELIB):

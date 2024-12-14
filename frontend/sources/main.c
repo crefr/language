@@ -23,7 +23,7 @@ int main(int argc, char ** argv)
     if (argc > 1 && (strcmp(argv[1], "-1") == 0)){
         fe_context_t fe = frontendInit(MAX_TOKEN_NUM);
 
-        node_t * tree = readTreeFromIR(&fe, "out.txt");
+        node_t * tree = readTreeFromIR(&fe, "../out.txt");
 
         treeDumpGraph(&fe, tree);
         frontendDump(&fe);
@@ -37,7 +37,7 @@ int main(int argc, char ** argv)
 
     fe_context_t fe = frontendInit(MAX_TOKEN_NUM);
 
-    char * str = readProgramText("program.txt");
+    char * str = readProgramText("../program.txt");
 
     lexicalAnalysis(&fe, str);
     frontendDump(&fe);
@@ -50,7 +50,7 @@ int main(int argc, char ** argv)
     printTreePrefix(&fe, tree);
     printf("\n");
 
-    FILE * out = fopen("out.txt", "w");
+    FILE * out = fopen("../out.txt", "w");
     writeTreeToFile(&fe, tree, out);
     fclose(out);
 
