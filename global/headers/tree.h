@@ -27,6 +27,12 @@ enum oper{
 
     LBRACKET,
     RBRACKET,
+
+    IF,
+
+    BEGIN,
+    ENDING,
+
     ASSIGN,
     SEP,
 
@@ -61,6 +67,12 @@ const oper_t opers[] = {
 
     {.name = "("  , .num = LBRACKET, .binary = false, .commutative = false, .asm_str = NULL},
     {.name = ")"  , .num = RBRACKET, .binary = false, .commutative = false, .asm_str = NULL},
+
+    {.name = "if",  .num = IF,  .binary = true, .commutative = false, .asm_str = NULL},
+
+    {.name = "begin", .num = BEGIN,  .binary = false, .commutative = false, .asm_str = NULL},
+    {.name = "end"  , .num = ENDING, .binary = false, .commutative = false, .asm_str = NULL},
+
     {.name = "="  , .num = ASSIGN  , .binary = true , .commutative = false, .asm_str = NULL},
     {.name = ";"  , .num = SEP     , .binary = true , .commutative = false, .asm_str = NULL},
 };

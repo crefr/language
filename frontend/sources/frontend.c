@@ -225,6 +225,9 @@ static void skipSpaces(const char ** code)
 static node_t * getChain(fe_context_t * frontend);
 
 static node_t * getStatement(fe_context_t * frontend);
+static node_t * getBlock(fe_context_t * frontend);
+
+static node_t * getIF(fe_context_t * frontend);
 
 static node_t * getAssign(fe_context_t * frontend);
 static node_t * getSTDfunc(fe_context_t * frontend);
@@ -245,6 +248,30 @@ static node_t * getId(fe_context_t * frontend);
 static void syntaxError(const char * expected, node_t * node);
 
 #define token (frontend->cur_node)
+
+#define LBRACKET_SKIP                                                   \
+    do {                                                                \
+        if (!(token->type == OPR && token->val.op == LBRACKET)){        \
+            frontend->status = HARD_ERROR;                              \
+            syntaxError("(", token);                                    \
+                                                                        \
+            return NULL;                                                \
+        }                                                               \
+        token++;                                                        \
+    } while(0)
+
+#define RBRACKET_SKIP                                                   \
+    do {                                                                \
+        if (!(token->type == OPR && token->val.op == RBRACKET)){        \
+            frontend->status = HARD_ERROR;                              \
+            syntaxError(")", token);                                    \
+                                                                        \
+            return NULL;                                                \
+        }                                                               \
+        token++;                                                        \
+    } while(0)
+
+#define tokenisOPR(op_num)  (token->type == OPR && token->val.op == op_num)
 
 node_t * parseCode(fe_context_t * frontend)
 {
@@ -267,11 +294,40 @@ node_t * parseCode(fe_context_t * frontend)
     return root;
 }
 
+static node_t * getBlock(fe_context_t * frontend)
+{
+    assert(frontend);
+
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
+
+    if (! tokenisOPR(BEGIN)){
+        frontend->status = SOFT_ERROR;
+        return NULL;
+    }
+    token++;
+
+    node_t * block_tree = getChain(frontend);
+    if (block_tree == NULL){
+        frontend->status = HARD_ERROR;
+        return NULL;
+    }
+
+    if (! tokenisOPR(ENDING)){
+        frontend->status = HARD_ERROR;
+        return NULL;
+    }
+    token++;
+
+    frontend->status = SUCCESS;
+
+    return block_tree;
+}
+
 static node_t * getChain(fe_context_t * frontend)
 {
     assert(frontend);
 
-    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getChain   (token #%zu)\n", (size_t)(token - frontend->tokens));
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
 
     node_t * cur = getStatement(frontend);
 
@@ -286,7 +342,6 @@ static node_t * getChain(fe_context_t * frontend)
     token++;
 
     node_t * last = tree;
-
 
     while ((cur = getStatement(frontend)) != NULL){
         if (!(token->type == OPR && token->val.op == SEP)){
@@ -312,19 +367,70 @@ static node_t * getStatement(fe_context_t * frontend)
 {
     assert(frontend);
 
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
+
     node_t * func = getSTDfunc(frontend);
     if (frontend->status == SUCCESS)
         return func;
     if (frontend->status == HARD_ERROR)
         return NULL;
 
+    node_t * if_node = getIF(frontend);
+    if (frontend->status == SUCCESS)
+        return if_node;
+
+    if (frontend->status == HARD_ERROR)
+        return NULL;
+
     return getAssign(frontend);
+}
+
+static node_t * getIF(fe_context_t * frontend)
+{
+    assert(frontend);
+
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
+
+    frontend->status = SUCCESS;
+
+    if (! tokenisOPR(IF)){
+        frontend->status = SOFT_ERROR;
+        return NULL;
+    }
+
+    node_t * if_node = token;
+    token++;
+
+    LBRACKET_SKIP;
+
+    node_t * cond_tree = getExpr(frontend);
+    if (frontend->status != SUCCESS){
+        frontend->status = HARD_ERROR;
+        return NULL;
+    }
+
+    RBRACKET_SKIP;
+
+    node_t * body_tree = getBlock(frontend);
+    if (body_tree == NULL){
+        frontend->status = HARD_ERROR;
+        return NULL;
+    }
+
+    if_node->left  = cond_tree;
+    if_node->right = body_tree;
+
+    frontend->status = SUCCESS;
+
+    return if_node;
 }
 
 // TODO: getInput, getOutput etc. can be implemented in one function with table of standard functions
 static node_t * getSTDfunc(fe_context_t * frontend)
 {
     assert(frontend);
+
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
 
     node_t * func = getInput(frontend);
 
@@ -347,7 +453,7 @@ static node_t * getInput(fe_context_t * frontend)
 {
     assert(frontend);
 
-    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getInput   (token #%zu)\n", (size_t)(token - frontend->tokens));
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
 
     frontend->status = SUCCESS;
 
@@ -389,7 +495,7 @@ static node_t * getOutput(fe_context_t * frontend)
 {
     assert(frontend);
 
-    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getOutput   (token #%zu)\n", (size_t)(token - frontend->tokens));
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
 
     frontend->status = SUCCESS;
 
@@ -431,7 +537,7 @@ static node_t * getAssign(fe_context_t * frontend)
 {
     assert(frontend);
 
-    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getAssign  (token #%zu)\n", (size_t)(token - frontend->tokens));
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
 
     node_t * left_part = getId(frontend);
     if (frontend->status != SUCCESS){
@@ -460,7 +566,7 @@ static node_t * getExpr(fe_context_t * frontend)
 {
     assert(frontend);
 
-    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getExpr    (token #%zu)\n", (size_t)(token - frontend->tokens));
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
 
     node_t * node = getMulDiv(frontend);
 
@@ -482,6 +588,8 @@ static node_t * getExpr(fe_context_t * frontend)
         node = cur_node;
     }
 
+    frontend->status = SUCCESS;
+
     return node;
 }
 
@@ -489,7 +597,7 @@ static node_t * getMulDiv(fe_context_t * frontend)
 {
     assert(frontend);
 
-    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getMulDiv  (token #%zu)\n", (size_t)(token - frontend->tokens));
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
 
     node_t * node = getPower(frontend);
 
@@ -518,7 +626,7 @@ static node_t * getPower(fe_context_t * frontend)
 {
     assert(frontend);
 
-    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getPower   (token #%zu)\n", (size_t)(token - frontend->tokens));
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
 
     node_t * node = getPrimary(frontend);
 
@@ -547,7 +655,7 @@ static node_t * getPrimary(fe_context_t * frontend)
 {
     assert(frontend);
 
-    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getPrimary (token #%zu)\n", (size_t)(token - frontend->tokens));
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
 
     if (token->type == OPR && token->val.op == LBRACKET){
         token++;
@@ -591,7 +699,7 @@ static node_t * getNumber(fe_context_t * frontend)
 {
     assert(frontend);
 
-    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getNumber  (token #%zu)\n", (size_t)(token - frontend->tokens));
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
 
     if (token->type == NUM){
         frontend->status = SUCCESS;
@@ -610,7 +718,7 @@ static node_t * getId(fe_context_t * frontend)
 {
     assert(frontend);
 
-    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getId      (token #%zu)\n", (size_t)(token - frontend->tokens));
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
 
     if (!(token->type == IDR)){
         frontend->status  = SOFT_ERROR;
@@ -629,7 +737,7 @@ static node_t * getFunc(fe_context_t * frontend)
 {
     assert(frontend);
 
-    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getFunc    (token #%zu)\n", (size_t)(token - frontend->tokens));
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
 
     if (token->type != OPR){
         frontend->status = SOFT_ERROR;
@@ -670,6 +778,8 @@ static node_t * getFunc(fe_context_t * frontend)
     return NULL;
 }
 
+#undef RBRACKET_SKIP
+#undef LBRACKET_SKIP
 #undef token
 
 //TODO add more functionality

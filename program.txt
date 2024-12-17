@@ -1,3 +1,4 @@
-x=51;
-out(x + 1);
-in ( y ) ;
+if(x)
+begin
+    x=5;
+end;
