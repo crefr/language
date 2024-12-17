@@ -18,6 +18,17 @@ int main()
 
     be_context_t backend = backendInit(MAX_NODES_NUM, "compiled.asm", "out.txt");
 
+
+    tree_context_t tree_context = {};
+
+    tree_context.cur_node = backend.root;
+    tree_context.id_size = backend.id_size;
+    tree_context.ids = backend.ids;
+
+    treeDumpGraph(&tree_context, backend.root, "backend_logs");
+
+    makeAssemblyCode(&backend);
+
     backendDtor(&backend);
 
     logExit();

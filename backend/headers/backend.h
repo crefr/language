@@ -11,6 +11,7 @@ typedef struct {
     node_t * nodes;
     size_t tree_size;
 
+    node_t * root;
     node_t * cur_node;
 
     idr_t ids[MAX_IDR_NUM];

@@ -8,6 +8,10 @@
 
 static void readTreeForBackend(be_context_t * be, const char * tree_file_name);
 
+static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node);
+
+static void translateExpression(be_context_t * be, node_t * cur_node);
+
 be_context_t backendInit(size_t nodes_num, const char * asm_file_name, const char * tree_file_name)
 {
     assert(asm_file_name);
@@ -26,11 +30,16 @@ be_context_t backendInit(size_t nodes_num, const char * asm_file_name, const cha
 
     readTreeForBackend(&context, tree_file_name);
 
+    context.root = context.nodes;
+
     return context;
 }
 
 static void readTreeForBackend(be_context_t * be, const char * tree_file_name)
 {
+    assert(be);
+    assert(tree_file_name);
+
     tree_context_t sub_context = {};
 
     sub_context.cur_node = be->cur_node;
@@ -55,10 +64,81 @@ void backendDtor(be_context_t * context)
     fclose(context->asm_file);
 }
 
-// void makeAssemblyCode(be_context_t * be)
-// {
-//     assert(be);
-//
-//
-//
-// }
+/*---------------------------TRANSLATING TO ASM---------------------------*/
+
+void makeAssemblyCode(be_context_t * be)
+{
+    assert(be);
+
+    logPrint(LOG_DEBUG, "started translating to asm...\n");
+
+    makeAssemblyCodeRecursive(be, be->root);
+    fprintf(be->asm_file, "HLT\n");
+
+    logPrint(LOG_DEBUG, "successfully translated to asm!\n");
+}
+
+#define asmPrintf(...) fprintf(be->asm_file, __VA_ARGS__)
+#define asmPrintVAR(var) asmPrintf(" [%u]     ; %s\n", var, be->ids[var].name)
+
+static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
+{
+    assert(be);
+
+    if (cur_node == NULL)
+        return;
+
+    assert(cur_node->type == OPR);
+
+    switch(cur_node->val.op){
+        case SEP:
+            makeAssemblyCodeRecursive(be, cur_node->left);
+            makeAssemblyCodeRecursive(be, cur_node->right);
+
+            break;
+
+        case ASSIGN:
+            // TODO: make memory indexes independent from indexes in name table
+            translateExpression(be, cur_node->right);
+
+            asmPrintf("POP ");
+            asmPrintVAR(cur_node->left->val.id);
+
+            break;
+
+        default:
+            fprintf(stderr, "ERROR: failed to translate to asm\n");
+            return;
+    }
+
+}
+
+static void translateExpression(be_context_t * be, node_t * cur_node)
+{
+    if (cur_node->type == NUM){
+        asmPrintf("PUSH %lg\n", cur_node->val.number);
+        return;
+    }
+
+    if (cur_node->type == IDR){
+        // TODO: make memory indexes independent from indexes in name table
+        asmPrintf("PUSH");
+        asmPrintVAR(cur_node->val.id);
+        return;
+    }
+
+    // if (...type == OPR)
+
+    enum oper op_num = cur_node->val.op;
+    if (opers[op_num].binary){
+        translateExpression(be, cur_node->left);
+        translateExpression(be, cur_node->right);
+    }
+    else
+        translateExpression(be, cur_node->left);
+
+    asmPrintf("%s\n", opers[op_num].asm_str);
+}
+
+#undef asmPrintVAR
+#undef asmPrintf

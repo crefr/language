@@ -44,7 +44,7 @@ void printTreePrefix(tree_context_t * tree, node_t * node)
     printf(")");
 }
 
-void treeDumpGraph(tree_context_t * tree, node_t * root_node)
+void treeDumpGraph(tree_context_t * tree, node_t * root_node, const char * log_folder)
 {
     assert(root_node);
 
@@ -57,11 +57,17 @@ void treeDumpGraph(tree_context_t * tree, node_t * root_node)
     char dot_file_name[MAX_FILE_NAME] = "";
     char img_file_name[MAX_FILE_NAME] = "";
 
-    system("mkdir -p logs/dots/");
-    system("mkdir -p logs/imgs/");
+    char mkdir_dots_cmd[MAX_FILE_NAME] = "";
+    char mkdir_imgs_cmd[MAX_FILE_NAME] = "";
 
-    sprintf(dot_file_name, "logs/dots/graph_%zu.dot", dump_count);
-    sprintf(img_file_name, "logs/imgs/graph_%zu.svg", dump_count);
+    sprintf(mkdir_dots_cmd, "mkdir -p %s/dots/", log_folder);
+    sprintf(mkdir_imgs_cmd, "mkdir -p %s/imgs/", log_folder);
+
+    system(mkdir_dots_cmd);
+    system(mkdir_imgs_cmd);
+
+    sprintf(dot_file_name, "%s/dots/graph_%zu.dot", log_folder, dump_count);
+    sprintf(img_file_name, "%s/imgs/graph_%zu.svg", log_folder, dump_count);
 
     FILE * dot_file = fopen(dot_file_name, "w");
     treeMakeDot(tree, root_node, dot_file);

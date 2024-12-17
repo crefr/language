@@ -36,25 +36,27 @@ typedef struct {
 
     bool binary;
     bool commutative;
+
+    const char * asm_str;
 } oper_t;
 
 const oper_t opers[] = {
-    {.name = "+"  , .num = ADD, .binary = true,  .commutative = true },
-    {.name = "-"  , .num = SUB, .binary = true,  .commutative = false},
-    {.name = "*"  , .num = MUL, .binary = true,  .commutative = true },
-    {.name = "/"  , .num = DIV, .binary = true,  .commutative = false},
-    {.name = "^"  , .num = POW, .binary = true,  .commutative = false},
-    {.name = "sin", .num = SIN, .binary = false, .commutative = false},
-    {.name = "cos", .num = COS, .binary = false, .commutative = false},
-    {.name = "tan", .num = TAN, .binary = false, .commutative = false},
-    {.name = "ln" , .num = LN , .binary = false, .commutative = false},
-    {.name = "log", .num = LOG, .binary = true,  .commutative = false},
-    {.name = "!"  , .num = FAC, .binary = false, .commutative = false},
+    {.name = "+"  , .num = ADD, .binary = true,  .commutative = true , .asm_str = "ADD"},
+    {.name = "-"  , .num = SUB, .binary = true,  .commutative = false, .asm_str = "SUB"},
+    {.name = "*"  , .num = MUL, .binary = true,  .commutative = true , .asm_str = "MUL"},
+    {.name = "/"  , .num = DIV, .binary = true,  .commutative = false, .asm_str = "DIV"},
+    {.name = "^"  , .num = POW, .binary = true,  .commutative = false, .asm_str = "POW"},
+    {.name = "sin", .num = SIN, .binary = false, .commutative = false, .asm_str = "SIN"},
+    {.name = "cos", .num = COS, .binary = false, .commutative = false, .asm_str = "COS"},
+    {.name = "tan", .num = TAN, .binary = false, .commutative = false, .asm_str = "TAN"},
+    {.name = "ln" , .num = LN , .binary = false, .commutative = false, .asm_str = "LN" },
+    {.name = "log", .num = LOG, .binary = true,  .commutative = false, .asm_str = NULL},
+    {.name = "!"  , .num = FAC, .binary = false, .commutative = false, .asm_str = NULL},
 
-    {.name = "("  , .num = LBRACKET, .binary = false, .commutative = false},
-    {.name = ")"  , .num = RBRACKET, .binary = false, .commutative = false},
-    {.name = "="  , .num = ASSIGN  , .binary = true , .commutative = false},
-    {.name = ";"  , .num = SEP     , .binary = true , .commutative = false},
+    {.name = "("  , .num = LBRACKET, .binary = false, .commutative = false, .asm_str = NULL},
+    {.name = ")"  , .num = RBRACKET, .binary = false, .commutative = false, .asm_str = NULL},
+    {.name = "="  , .num = ASSIGN  , .binary = true , .commutative = false, .asm_str = NULL},
+    {.name = ";"  , .num = SEP     , .binary = true , .commutative = false, .asm_str = NULL},
 };
 const size_t opers_size = sizeof(opers) / sizeof(*opers);
 
@@ -91,7 +93,7 @@ typedef struct {
 
 void printTreePrefix(tree_context_t * tr, node_t * node);
 
-void treeDumpGraph(tree_context_t * tr, node_t * root_node);
+void treeDumpGraph(tree_context_t * tree, node_t * root_node, const char * log_folder);
 
 void treeMakeDot(tree_context_t * tr, node_t * node, FILE * dot_file);
 
