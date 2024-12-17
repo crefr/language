@@ -228,6 +228,7 @@ static node_t * getStatement(fe_context_t * frontend);
 static node_t * getBlock(fe_context_t * frontend);
 
 static node_t * getIF(fe_context_t * frontend);
+static node_t * getWhile(fe_context_t * frontend);
 
 static node_t * getAssign(fe_context_t * frontend);
 static node_t * getSTDfunc(fe_context_t * frontend);
@@ -378,11 +379,56 @@ static node_t * getStatement(fe_context_t * frontend)
     node_t * if_node = getIF(frontend);
     if (frontend->status == SUCCESS)
         return if_node;
+    if (frontend->status == HARD_ERROR)
+        return NULL;
 
+    node_t * while_node = getWhile(frontend);
+    if (frontend->status == SUCCESS)
+        return while_node;
     if (frontend->status == HARD_ERROR)
         return NULL;
 
     return getAssign(frontend);
+}
+
+static node_t * getWhile(fe_context_t * frontend)
+{
+    assert(frontend);
+
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
+
+    frontend->status = SUCCESS;
+
+    if (! tokenisOPR(WHILE)){
+        frontend->status = SOFT_ERROR;
+        return NULL;
+    }
+
+    node_t * while_node = token;
+    token++;
+
+    LBRACKET_SKIP;
+
+    node_t * cond_tree = getExpr(frontend);
+    if (frontend->status != SUCCESS){
+        frontend->status = HARD_ERROR;
+        return NULL;
+    }
+
+    RBRACKET_SKIP;
+
+    node_t * body_tree = getBlock(frontend);
+    if (body_tree == NULL){
+        frontend->status = HARD_ERROR;
+        return NULL;
+    }
+
+    while_node->left  = cond_tree;
+    while_node->right = body_tree;
+
+    frontend->status = SUCCESS;
+
+    return while_node;
 }
 
 static node_t * getIF(fe_context_t * frontend)

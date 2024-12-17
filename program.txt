@@ -4,9 +4,10 @@ y = 0;
 in(y);
 
 answer = 1;
-if (x-y)
+while (x-y)
 begin
-    answer = 0;
+    y=y+1;
+    out(y);
 end;
 
 out(answer);

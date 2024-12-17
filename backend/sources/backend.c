@@ -87,6 +87,9 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
 {
     assert(be);
 
+    static size_t if_counter = 0;
+    static size_t while_counter = 0;
+
     if (cur_node == NULL)
         return;
 
@@ -121,15 +124,39 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
 
             break;
 
-        case IF:
+        case IF: {
+            size_t if_index = if_counter;
+            if_counter++;
+
             translateExpression(be, cur_node->left);
 
             asmPrintf("PUSH 0\n");
-            asmPrintf("JE IF_END_%zu:\n", (size_t)cur_node);
+            asmPrintf("JE IF_END_%zu:\n", if_index);
             makeAssemblyCodeRecursive(be, cur_node->right);
-            asmPrintf("IF_END_%zu:\n", (size_t)cur_node);
+            asmPrintf("IF_END_%zu:\n", if_index);
+
+            if_counter++;
+            break;
+        }
+
+        case WHILE: {
+            size_t while_index = while_counter;
+            while_counter++;
+
+            asmPrintf("WHILE_BEGIN_%zu:\n", while_index);
+
+            translateExpression(be, cur_node->left);
+            asmPrintf("PUSH 0\n");
+            asmPrintf("JE WHILE_END_%zu:\n", while_index);
+
+            makeAssemblyCodeRecursive(be, cur_node->right);
+
+            asmPrintf("JMP WHILE_BEGIN_%zu:\n", while_index);
+            asmPrintf("WHILE_END_%zu:\n", while_index);
+
 
             break;
+        }
 
         default:
             fprintf(stderr, "ERROR: failed to translate to asm\n");

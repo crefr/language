@@ -6,14 +6,20 @@ IN
 POP  [1]     ; y
 PUSH 1
 POP  [2]     ; answer
+WHILE_BEGIN_0:
 PUSH [0]     ; x
 PUSH [1]     ; y
 SUB
 PUSH 0
-JE IF_END_108782931674880:
-PUSH 0
-POP  [2]     ; answer
-IF_END_108782931674880:
+JE WHILE_END_0:
+PUSH [1]     ; y
+PUSH 1
+ADD
+POP  [1]     ; y
+PUSH [1]     ; y
+OUT
+JMP WHILE_BEGIN_0:
+WHILE_END_0:
 PUSH [2]     ; answer
 OUT
 HLT
