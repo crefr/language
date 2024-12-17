@@ -157,6 +157,20 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
             break;
         }
 
+        case FUNC_DECL: {
+            const char * func_name = be->ids[cur_node->left->val.id].name;
+            asmPrintf("JMP END_OF_FUNC_%s: ;skipping func body\n", func_name);
+
+            asmPrintf("%s:\n", func_name);
+
+            makeAssemblyCodeRecursive(be, cur_node->right);
+            asmPrintf("RET\n");
+
+            asmPrintf("END_OF_FUNC_%s:\n", func_name);
+
+            break;
+        }
+
         default:
             fprintf(stderr, "ERROR: failed to translate to asm\n");
             return;
