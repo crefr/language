@@ -13,4 +13,10 @@ logs/
 backend_logs/
 frontend_logs/
 
+asmlog.txt
+spulog.txt
+compiled.bin
+compiled.txt
+
+
 .vscode/

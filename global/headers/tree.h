@@ -22,6 +22,9 @@ enum oper{
     LOG,
     FAC,
 
+    IN,
+    OUT,
+
     LBRACKET,
     RBRACKET,
     ASSIGN,
@@ -52,6 +55,9 @@ const oper_t opers[] = {
     {.name = "ln" , .num = LN , .binary = false, .commutative = false, .asm_str = "LN" },
     {.name = "log", .num = LOG, .binary = true,  .commutative = false, .asm_str = NULL},
     {.name = "!"  , .num = FAC, .binary = false, .commutative = false, .asm_str = NULL},
+
+    {.name = "in",  .num = IN , .binary = false, .commutative = false, .asm_str = NULL},
+    {.name = "out", .num = OUT, .binary = false, .commutative = false, .asm_str = NULL},
 
     {.name = "("  , .num = LBRACKET, .binary = false, .commutative = false, .asm_str = NULL},
     {.name = ")"  , .num = RBRACKET, .binary = false, .commutative = false, .asm_str = NULL},

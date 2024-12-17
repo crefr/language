@@ -1,8 +1,13 @@
 <RESULT>  ::= <Chain>
 
-<Chain>   ::= (<Assign> ";")*
+<Chain>   ::= (<Statement> ";")*
+<Statement> ::= <STDfunc> | <Assign>
 
 <Assign>  ::= <Var> "=" <Expr>
+<STDfunc> ::= <Input> | <Output>
+
+<Input>   ::= "in"  "(" <Var> ")"
+<Output>  ::= "out" "(" <Expr> ")"
 
 <Expr>    ::= <MulDiv>  (("+" | "-") <MulDiv>)*
 <MulDiv>  ::= <Power> (("*" | "/") <Power>)*
@@ -16,4 +21,4 @@
 <ID>	  ::= ([a-z] | "_") ([a-z] | [0-9] | "_")*
 <Number>  ::= [0-9]+
 
-https://bnfplayground.pauliankline.com/?bnf=%3CRESULT%3E%20%20%3A%3A%3D%20%3CExpr%3E%0A%0A%3CExpr%3E%20%20%20%20%3A%3A%3D%20%3CMulDiv%3E%20%20((%22%2B%22%20%7C%20%22-%22)%20%3CMulDiv%3E)*%0A%3CMulDiv%3E%20%20%3A%3A%3D%20%3CPrimary%3E%20((%22%2B%22%20%7C%20%22-%22)%20%3CPrimary%3E)*%0A%3CPrimary%3E%20%3A%3A%3D%20%22(%22%20%3CExpr%3E%20%22)%22%20%7C%20%3CFunc%3E%20%7C%20%3CVar%3E%20%7C%20%3CNumber%3E%0A%0A%3CFunc%3E%09%20%20%3A%3A%3D%20%3CName%3E%20%22(%22%20%3CExpr%3E%20%22)%22%20%0A%3CVar%3E%09%20%20%3A%3A%3D%20%3CName%3E%20%0A%0A%3CName%3E%09%20%20%3A%3A%3D%20(%5Ba-z%5D%20%7C%20%22_%22)%20(%5Ba-z%5D%20%7C%20%5B0-9%5D%20%7C%20%22_%22)*%20%0A%3CNumber%3E%20%20%3A%3A%3D%20%5B0-9%5D%2B%0A&name=
+https://bnfplayground.pauliankline.com/?bnf=%3CRESULT%3E%20%20%3A%3A%3D%20%3CChain%3E%0A%0A%3CChain%3E%20%20%20%3A%3A%3D%20(%3CStatement%3E%20%22%3B%22)*%0A%3CStatement%3E%20%3A%3A%3D%20%3CAssign%3E%20%7C%20%3CInput%3E%20%7C%20%3COutput%3E%0A%0A%3CAssign%3E%20%20%3A%3A%3D%20%3CVar%3E%20%22%3D%22%20%3CExpr%3E%0A%0A%3CInput%3E%20%20%20%3A%3A%3D%20%22in%22%20%22(%22%20%3CExpr%3E%20%22)%22%0A%3COutput%3E%20%20%3A%3A%3D%20%22out%22%20%22(%22%20%3CExpr%3E%20%22)%22%0A%0A%3CExpr%3E%20%20%20%20%3A%3A%3D%20%3CMulDiv%3E%20%20((%22%2B%22%20%7C%20%22-%22)%20%3CMulDiv%3E)*%0A%3CMulDiv%3E%20%20%3A%3A%3D%20%3CPower%3E%20((%22*%22%20%7C%20%22%2F%22)%20%3CPower%3E)*%0A%0A%3CPower%3E%20%20%20%3A%3A%3D%20%3CPrimary%3E%20(%22%5E%22%20%3CPower%3E)%3F%0A%3CPrimary%3E%20%3A%3A%3D%20%22(%22%20%3CExpr%3E%20%22)%22%20%7C%20%3CFunc%3E%20%7C%20%3CVar%3E%20%7C%20%3CNumber%3E%0A%0A%3CFunc%3E%09%20%20%3A%3A%3D%20%3CID%3E%20%22(%22%20%3CExpr%3E%20%22)%22%0A%3CVar%3E%09%20%20%3A%3A%3D%20%3CID%3E%0A%0A%3CID%3E%09%20%20%3A%3A%3D%20(%5Ba-z%5D%20%7C%20%22_%22)%20(%5Ba-z%5D%20%7C%20%5B0-9%5D%20%7C%20%22_%22)*%0A%3CNumber%3E%20%20%3A%3A%3D%20%5B0-9%5D%2B%0A&name=

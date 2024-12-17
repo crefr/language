@@ -1,15 +1,9 @@
-PUSH 1
+PUSH 51
 POP  [0]     ; x
-PUSH 2
-POP  [1]     ; y
-PUSH 228
-COS
-POP  [2]     ; b
 PUSH [0]     ; x
-PUSH [1]     ; y
-MUL
-SIN
-PUSH [2]     ; b
+PUSH 1
 ADD
-POP  [3]     ; z
+OUT
+IN
+POP  [1]     ; y
 HLT

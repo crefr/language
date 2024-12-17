@@ -79,6 +79,8 @@ void makeAssemblyCode(be_context_t * be)
 }
 
 #define asmPrintf(...) fprintf(be->asm_file, __VA_ARGS__)
+
+// TODO: make memory indexes independent from indexes in name table
 #define asmPrintVAR(var) asmPrintf(" [%u]     ; %s\n", var, be->ids[var].name)
 
 static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
@@ -98,7 +100,6 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
             break;
 
         case ASSIGN:
-            // TODO: make memory indexes independent from indexes in name table
             translateExpression(be, cur_node->right);
 
             asmPrintf("POP ");
@@ -106,11 +107,24 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
 
             break;
 
+        case IN:
+            asmPrintf("IN\n");
+
+            asmPrintf("POP ");
+            asmPrintVAR(cur_node->left->val.id);
+
+            break;
+
+        case OUT:
+            translateExpression(be, cur_node->left);
+            asmPrintf("OUT\n");
+
+            break;
+
         default:
             fprintf(stderr, "ERROR: failed to translate to asm\n");
             return;
     }
-
 }
 
 static void translateExpression(be_context_t * be, node_t * cur_node)

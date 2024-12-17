@@ -68,7 +68,7 @@ void frontendDump(fe_context_t * frontend)
             logPrint(LOG_DEBUG, "\t\t\ttype = IDR\n\t\t\tvalue = '%s'\n", frontend->ids[cur_token.val.id].name);
         }
         else if (cur_token.type == OPR){
-            logPrint(LOG_DEBUG, "\t\t\ttype = OPR\n\t\t\tvalue = '%s'\n", opers[cur_token.val.op]);
+            logPrint(LOG_DEBUG, "\t\t\ttype = OPR\n\t\t\tvalue = '%s'\n", opers[cur_token.val.op].name);
         }
         else {
             logPrint(LOG_DEBUG, "\t\t\ttype = END\n");
@@ -224,20 +224,22 @@ static void skipSpaces(const char ** code)
 
 static node_t * getChain(fe_context_t * frontend);
 
+static node_t * getStatement(fe_context_t * frontend);
+
 static node_t * getAssign(fe_context_t * frontend);
+static node_t * getSTDfunc(fe_context_t * frontend);
+
+static node_t * getInput(fe_context_t * frontend);
+static node_t * getOutput(fe_context_t * frontend);
 
 static node_t * getExpr(fe_context_t * frontend);
-
 static node_t * getMulDiv(fe_context_t * frontend);
-
 static node_t * getPower(fe_context_t * frontend);
-
 static node_t * getPrimary(fe_context_t * frontend);
 
 static node_t * getNumber(fe_context_t * frontend);
 
 static node_t * getFunc(fe_context_t * frontend);
-
 static node_t * getId(fe_context_t * frontend);
 
 static void syntaxError(const char * expected, node_t * node);
@@ -271,7 +273,7 @@ static node_t * getChain(fe_context_t * frontend)
 
     logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getChain   (token #%zu)\n", (size_t)(token - frontend->tokens));
 
-    node_t * cur = getAssign(frontend);
+    node_t * cur = getStatement(frontend);
 
     if (!(token->type == OPR && token->val.op == SEP)){
         frontend->status = HARD_ERROR;
@@ -286,7 +288,7 @@ static node_t * getChain(fe_context_t * frontend)
     node_t * last = tree;
 
 
-    while ((cur = getAssign(frontend)) != NULL){
+    while ((cur = getStatement(frontend)) != NULL){
         if (!(token->type == OPR && token->val.op == SEP)){
             frontend->status = HARD_ERROR;
 
@@ -304,6 +306,125 @@ static node_t * getChain(fe_context_t * frontend)
     }
 
     return tree;
+}
+
+static node_t * getStatement(fe_context_t * frontend)
+{
+    assert(frontend);
+
+    node_t * func = getSTDfunc(frontend);
+    if (frontend->status == SUCCESS)
+        return func;
+    if (frontend->status == HARD_ERROR)
+        return NULL;
+
+    return getAssign(frontend);
+}
+
+// TODO: getInput, getOutput etc. can be implemented in one function with table of standard functions
+static node_t * getSTDfunc(fe_context_t * frontend)
+{
+    assert(frontend);
+
+    node_t * func = getInput(frontend);
+
+    if (frontend->status == SUCCESS)
+        return func;
+    if (frontend->status == HARD_ERROR)
+        return NULL;
+
+    func = getOutput(frontend);
+
+    if (frontend->status == SUCCESS)
+        return func;
+    if (frontend->status == HARD_ERROR)
+        return NULL;
+
+    return NULL;
+}
+
+static node_t * getInput(fe_context_t * frontend)
+{
+    assert(frontend);
+
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getInput   (token #%zu)\n", (size_t)(token - frontend->tokens));
+
+    frontend->status = SUCCESS;
+
+    if (!(token->type == OPR && token->val.op == IN)){
+        frontend->status = SOFT_ERROR;
+        return NULL;
+    }
+
+    node_t * input_node = token;
+    token++;
+
+    if (!(token->type == OPR && token->val.op == LBRACKET)){
+        frontend->status = HARD_ERROR;
+        syntaxError("(", token);
+
+        return NULL;
+    }
+    token++;
+
+    node_t * var_node = getId(frontend);
+    if (frontend->status != SUCCESS)
+        return NULL;
+
+    if (!(token->type == OPR && token->val.op == RBRACKET)){
+        frontend->status = HARD_ERROR;
+        syntaxError(")", token);
+
+        return NULL;
+    }
+    token++;
+
+    input_node->left  = var_node;
+    input_node->right = NULL;
+
+    return input_node;
+}
+
+static node_t * getOutput(fe_context_t * frontend)
+{
+    assert(frontend);
+
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in getOutput   (token #%zu)\n", (size_t)(token - frontend->tokens));
+
+    frontend->status = SUCCESS;
+
+    if (!(token->type == OPR && token->val.op == OUT)){
+        frontend->status = SOFT_ERROR;
+        return NULL;
+    }
+
+    node_t * output_node = token;
+    token++;
+
+    if (!(token->type == OPR && token->val.op == LBRACKET)){
+        frontend->status = HARD_ERROR;
+        syntaxError("(", token);
+
+        return NULL;
+    }
+    token++;
+
+    node_t * expr_tree = getExpr(frontend);
+    if (frontend->status != SUCCESS)
+        return NULL;
+
+    if (!(token->type == OPR && token->val.op == RBRACKET)){
+        frontend->status = HARD_ERROR;
+        syntaxError(")", token);
+
+        return NULL;
+    }
+    token++;
+
+    output_node->left  = expr_tree;
+    output_node->right = NULL;
+
+    return output_node;
 }
 
 static node_t * getAssign(fe_context_t * frontend)
