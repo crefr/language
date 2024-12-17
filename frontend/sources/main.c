@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 
 #include "logger.h"
+#include "reverse_frontend.h"
 #include "frontend.h"
 #include "tree.h"
 
@@ -33,8 +34,10 @@ int main(int argc, char ** argv)
         tr.id_size = fe.id_size;
 
         node_t * tree = readTreeFromIR(&tr, "out.txt");
-
         treeDumpGraph(&tr, tree, LOG_FOLDER_NAME);
+
+        printCodeFromTree("generated_code.txt", &tr, tree);
+
         frontendDump(&fe);
 
         frontendDtor(&fe);
