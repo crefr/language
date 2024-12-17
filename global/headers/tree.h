@@ -31,6 +31,8 @@ enum oper{
     IF,
     WHILE,
 
+    FUNC_DECL,
+
     BEGIN,
     ENDING,
 
@@ -72,6 +74,8 @@ const oper_t opers[] = {
     {.name = "if"   , .num = IF,    .binary = true, .commutative = false, .asm_str = NULL},
     {.name = "while", .num = WHILE, .binary = true, .commutative = false, .asm_str = NULL},
 
+    {.name = "func", .num = FUNC_DECL, .binary = true, .commutative = false, .asm_str = NULL},
+
     {.name = "begin", .num = BEGIN,  .binary = false, .commutative = false, .asm_str = NULL},
     {.name = "end"  , .num = ENDING, .binary = false, .commutative = false, .asm_str = NULL},
 
@@ -99,9 +103,14 @@ typedef struct node {
 
 const size_t NAME_MAX_LENGTH = 64;
 
+enum id_type {
+    VAR,
+    FUNC
+};
+
 typedef struct {
     char name[NAME_MAX_LENGTH];
-    double value;
+    enum id_type type; // is VAR by default
 } idr_t;
 
 typedef struct {

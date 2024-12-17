@@ -1,11 +1,9 @@
-PUSH 15
+PUSH 100
 POP  [0]     ; x
 PUSH 0
 POP  [1]     ; y
 IN
 POP  [1]     ; y
-PUSH 1
-POP  [2]     ; answer
 WHILE_BEGIN_0:
 PUSH [0]     ; x
 PUSH [1]     ; y
@@ -20,6 +18,4 @@ PUSH [1]     ; y
 OUT
 JMP WHILE_BEGIN_0:
 WHILE_END_0:
-PUSH [2]     ; answer
-OUT
 HLT

@@ -82,7 +82,7 @@ void frontendDump(fe_context_t * frontend)
         logPrint(LOG_DEBUG, "\t\tid #%zu:\n", id_index);
         idr_t cur_id = frontend->ids[id_index];
 
-        logPrint(LOG_DEBUG, "\t\t\tname = '%s'\n\t\t\tvalue = %lg\n", cur_id.name, cur_id.value);
+        logPrint(LOG_DEBUG, "\t\t\tname = '%s'\n\t\t\ttype = %s\n", cur_id.name, (cur_id.type == VAR) ? "VAR" : "FUNC");
     }
 
     logPrint(LOG_DEBUG, "----------frontend context dump end---------\n");
@@ -138,7 +138,7 @@ int lexicalAnalysis(fe_context_t * frontend, const char * code)
                 frontend->tokens[token_index].val.op = op_num;
             }
 
-            // so it is a id
+            // so it is an id
             else if (id_status == IS_IDR || id_status == IS_IDR_OR_OPR){
                 logPrint(LOG_DEBUG_PLUS, "\tis a identifier\n");
 
@@ -150,6 +150,7 @@ int lexicalAnalysis(fe_context_t * frontend, const char * code)
                     id_index = frontend->id_size;
 
                     strcpy(frontend->ids[id_index].name, buffer);
+                    frontend->ids[id_index].type = VAR; // VAR is default value
 
                     frontend->id_size++;
 
@@ -226,6 +227,8 @@ static node_t * getChain(fe_context_t * frontend);
 
 static node_t * getStatement(fe_context_t * frontend);
 static node_t * getBlock(fe_context_t * frontend);
+
+static node_t * getFuncDecl(fe_context_t * frontend);
 
 static node_t * getIF(fe_context_t * frontend);
 static node_t * getWhile(fe_context_t * frontend);
@@ -388,6 +391,13 @@ static node_t * getStatement(fe_context_t * frontend)
     if (frontend->status == HARD_ERROR)
         return NULL;
 
+    node_t * func_node = getFuncDecl(frontend);
+    if (frontend->status == SUCCESS)
+        return func_node;
+    if (frontend->status == HARD_ERROR)
+        return NULL;
+
+    // else
     return getAssign(frontend);
 }
 
@@ -429,6 +439,49 @@ static node_t * getWhile(fe_context_t * frontend)
     frontend->status = SUCCESS;
 
     return while_node;
+}
+
+static node_t * getFuncDecl(fe_context_t * frontend)
+{
+    assert(frontend);
+
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
+
+    frontend->status = SUCCESS;
+
+    node_t * func = token;
+    if (! tokenisOPR(FUNC_DECL)){
+        frontend->status = SOFT_ERROR;
+        return NULL;
+    }
+    token++;
+
+    node_t * id_node = token;
+    if (id_node->type != IDR){
+        frontend->status = HARD_ERROR;
+        return NULL;
+    }
+
+    // setting type to FUNC in name table
+    frontend->ids[id_node->val.id].type = FUNC;
+    token++;
+
+    LBRACKET_SKIP;
+
+    // there could be your ads but must be args of the function handling. will be soon...
+
+    RBRACKET_SKIP;
+
+    node_t * body_tree = getBlock(frontend);
+    if (frontend->status != SUCCESS){
+        frontend->status = HARD_ERROR;
+        return NULL;
+    }
+
+    func->left  = id_node;
+    func->right = body_tree;
+
+    return func;
 }
 
 static node_t * getIF(fe_context_t * frontend)

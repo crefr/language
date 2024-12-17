@@ -1,13 +1,6 @@
-x = 15;
+x=0;
 
-y = 0;
-in(y);
-
-answer = 1;
-while (x-y)
+func foo()
 begin
-    y=y+1;
-    out(y);
+    x=x+1;
 end;
-
-out(answer);
