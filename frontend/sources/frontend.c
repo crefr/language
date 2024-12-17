@@ -29,7 +29,9 @@ fe_context_t frontendInit(size_t token_num)
 
     frontend.oper_table = tableCtor(OPR_TABLE_SIZE);
     for (size_t oper_index = 0; oper_index < opers_size; oper_index++){
-        tableInsert(&(frontend.oper_table), opers[oper_index].name, &(opers[oper_index].num), sizeof(opers[oper_index].num));
+        // name can be NULL when we actually do not want this operator in program text
+        if (opers[oper_index].name != NULL)
+            tableInsert(&(frontend.oper_table), opers[oper_index].name, &(opers[oper_index].num), sizeof(opers[oper_index].num));
     }
 
     frontend.idr_table  = tableCtor(IDR_TABLE_SIZE);
@@ -231,6 +233,7 @@ static node_t * getStatement(fe_context_t * frontend);
 static node_t * getBlock(fe_context_t * frontend);
 
 static node_t * getFuncDecl(fe_context_t * frontend);
+static node_t * getFuncCall(fe_context_t * frontend);
 
 static node_t * getIF(fe_context_t * frontend);
 static node_t * getWhile(fe_context_t * frontend);
@@ -250,7 +253,7 @@ static node_t * getPrimary(fe_context_t * frontend);
 
 static node_t * getNumber(fe_context_t * frontend);
 
-static node_t * getFunc(fe_context_t * frontend);
+static node_t * getMathFunc(fe_context_t * frontend);
 static node_t * getId(fe_context_t * frontend);
 
 static void syntaxError(const char * expected, node_t * node);
@@ -446,28 +449,38 @@ static node_t * getFuncDecl(fe_context_t * frontend)
 
     frontend->status = SUCCESS;
 
-    node_t * func = token;
     if (! tokenisOPR(FUNC_DECL)){
         frontend->status = SOFT_ERROR;
         return NULL;
     }
+    node_t * func = token;
     token++;
 
-    node_t * id_node = token;
-    if (id_node->type != IDR){
+    if (token->type != IDR){
         frontend->status = HARD_ERROR;
         return NULL;
     }
+    node_t * id_node = token;
+    token++;
 
     // setting type to FUNC in name table
     frontend->ids[id_node->val.id].type = FUNC;
-    token++;
 
     LBRACKET_SKIP;
 
     // there could be your ads but must be args of the function handling. will be soon...
 
+    // transfroming right bracket into a FUNC_HEADER
+    node_t * func_header = token;
     RBRACKET_SKIP;
+
+    func_header->type = OPR;
+    func_header->val.op = FUNC_HEADER;
+
+    func_header->left = id_node;
+
+    // not forever... there should be args
+    func_header->right = NULL;
 
     node_t * body_tree = getBlock(frontend);
     if (frontend->status != SUCCESS){
@@ -475,7 +488,7 @@ static node_t * getFuncDecl(fe_context_t * frontend)
         return NULL;
     }
 
-    func->left  = id_node;
+    func->left  = func_header;
     func->right = body_tree;
 
     return func;
@@ -796,15 +809,19 @@ static node_t * getPrimary(fe_context_t * frontend)
         return node;
     }
 
-    node_t * func = getFunc(frontend);
+    node_t * math_func = getMathFunc(frontend);
+    if (frontend->status == SUCCESS)
+        return math_func;
+    else if (frontend->status == HARD_ERROR)
+        return NULL;
 
+    node_t * func = getFuncCall(frontend);
     if (frontend->status == SUCCESS)
         return func;
     else if (frontend->status == HARD_ERROR)
         return NULL;
 
     node_t * id = getId(frontend);
-
     if (frontend->status == SUCCESS)
         return id;
     else if (frontend->status == HARD_ERROR)
@@ -815,6 +832,46 @@ static node_t * getPrimary(fe_context_t * frontend)
         return number;
 
     return NULL;
+}
+
+static node_t * getFuncCall(fe_context_t * frontend)
+{
+    assert(frontend);
+
+    frontend->status = SUCCESS;
+
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
+
+    if (token->type != IDR){
+        frontend->status = SOFT_ERROR;
+        return NULL;
+    }
+    node_t * func_node = token;
+    token++;
+
+    if (! tokenisOPR(LBRACKET)){
+        frontend->status = SOFT_ERROR;
+        token--;
+
+        return NULL;
+    }
+    node_t * call_node = token;
+    token++;
+
+    call_node->val.op = CALL;
+    call_node->left = func_node;
+
+    // not forever...
+    call_node->right = NULL;
+
+    // it has left bracket so it is a function
+    frontend->ids[func_node->val.id].type = FUNC;
+
+    // here also can be your ads, but must be args handling...
+
+    RBRACKET_SKIP;
+
+    return call_node;
 }
 
 static node_t * getNumber(fe_context_t * frontend)
@@ -855,7 +912,7 @@ static node_t * getId(fe_context_t * frontend)
     return id_node;
 }
 
-static node_t * getFunc(fe_context_t * frontend)
+static node_t * getMathFunc(fe_context_t * frontend)
 {
     assert(frontend);
 

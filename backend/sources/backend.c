@@ -158,7 +158,7 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
         }
 
         case FUNC_DECL: {
-            const char * func_name = be->ids[cur_node->left->val.id].name;
+            const char * func_name = be->ids[cur_node->left->left->val.id].name;
             asmPrintf("JMP END_OF_FUNC_%s: ;skipping func body\n", func_name);
 
             asmPrintf("%s:\n", func_name);
@@ -179,6 +179,14 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
             break;
         }
 
+        case CALL: {
+            const char * func_name = be->ids[cur_node->left->val.id].name;
+
+            asmPrintf("CALL %s:\n", func_name);
+            asmPrintf("PUSH RAX\n");
+
+            break;
+        }
 
         default:
             fprintf(stderr, "ERROR: failed to translate to asm (do not know this operator)\n");
@@ -201,6 +209,11 @@ static void translateExpression(be_context_t * be, node_t * cur_node)
     }
 
     // if (...type == OPR)
+
+    if (cur_node->val.op == CALL){
+        makeAssemblyCodeRecursive(be, cur_node);
+        return;
+    }
 
     enum oper op_num = cur_node->val.op;
     if (opers[op_num].binary){

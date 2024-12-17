@@ -131,14 +131,21 @@ static int readNameTable(tree_context_t * tree, const char ** cur_pos)
 
     while (shift == 0){
         char name_buf[BUFFER_LEN] = "";
+        char type_buf[BUFFER_LEN] = "";
         size_t index = 0;
 
-        sscanf(*cur_pos, " %zu : \"%[^\"]\" ;%n", &index, name_buf, &shift);
+        sscanf(*cur_pos, " %zu : \"%[^\"]\", %[^ ;] ;%n", &index, name_buf, type_buf, &shift);
         *cur_pos += shift;
 
-        logPrint(LOG_DEBUG, "scanned name: %04zu, \"%s\";\n", index, name_buf);
+        logPrint(LOG_DEBUG, "scanned name: %04zu, \"%s\", %s;\n", index, name_buf, type_buf);
 
         strcpy(tree->ids[index].name, name_buf);
+
+        if (strcmp(type_buf, "FUNC") == 0)
+            tree->ids[index].type = FUNC;
+        else
+            tree->ids[index].type = VAR;
+
         tree->id_size++;
 
         shift = 0;
@@ -255,7 +262,8 @@ static void writeNameTable(tree_context_t * tree, FILE * out_file)
     fprintf(out_file, "nametable {\n");
 
     for (size_t id_index = 0; id_index < tree->id_size; id_index++){
-        fprintf(out_file, "\t%04zu: \"%s\";\n", id_index, tree->ids[id_index].name);
+        const char * type_str = (tree->ids[id_index].type == VAR) ? "VAR" : "FUNC";
+        fprintf(out_file, "\t%04zu: \"%s\", %s;\n", id_index, tree->ids[id_index].name, type_str);
     }
 
     fprintf(out_file, "}\n");

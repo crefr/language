@@ -31,7 +31,9 @@ enum oper{
     IF,
     WHILE,
 
+    CALL,
     FUNC_DECL,
+    FUNC_HEADER,
     RETURN,
 
     BEGIN,
@@ -39,6 +41,8 @@ enum oper{
 
     ASSIGN,
     SEP,
+
+
 
     NO_OP
 };
@@ -75,8 +79,10 @@ const oper_t opers[] = {
     {.name = "if"   , .num = IF,    .binary = true, .commutative = false, .asm_str = NULL},
     {.name = "while", .num = WHILE, .binary = true, .commutative = false, .asm_str = NULL},
 
-    {.name = "func",   .num = FUNC_DECL, .binary = true,  .commutative = false, .asm_str = NULL},
-    {.name = "return", .num = RETURN,    .binary = false, .commutative = false, .asm_str = NULL},
+    {.name = NULL,    .num = CALL, .binary = true,  .commutative = false, .asm_str = NULL},
+    {.name = "func",  .num = FUNC_DECL, .binary = true,  .commutative = false, .asm_str = NULL},
+    {.name = NULL,    .num = FUNC_HEADER, .binary = true,  .commutative = false, .asm_str = NULL},
+    {.name = "return",.num = RETURN,    .binary = false, .commutative = false, .asm_str = NULL},
 
     {.name = "begin", .num = BEGIN,  .binary = false, .commutative = false, .asm_str = NULL},
     {.name = "end"  , .num = ENDING, .binary = false, .commutative = false, .asm_str = NULL},
