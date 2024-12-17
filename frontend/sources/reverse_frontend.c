@@ -77,6 +77,17 @@ static void printCodeFromTreeRecursive(FILE * out_file, tree_context_t * context
 
             break;
 
+        case IF:
+            fprintf(out_file, "if (");
+            printCodeFromTreeRecursive(out_file, context, node->left);
+            fprintf(out_file, ")\n");
+
+            fprintf(out_file, "begin\n");
+            printCodeFromTreeRecursive(out_file, context, node->right);
+            fprintf(out_file, "end");
+
+            break;
+
         default:
             fprintf(stderr, "cannot generate it\n");
             break;

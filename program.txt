@@ -1,4 +1,12 @@
-if(x)
+x = 15;
+
+y = 0;
+in(y);
+
+answer = 1;
+if (x-y)
 begin
-    x=5;
+    answer = 0;
 end;
+
+out(answer);

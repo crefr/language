@@ -1,13 +1,37 @@
 TXT:1
 nametable {
 	0000: "x";
+	0001: "y";
+	0002: "answer";
 }
 {OPR:19
-{OPR:15
-{IDR:0}{OPR:19
 {OPR:18
-{IDR:0}{NUM:5}}
+{IDR:0}{NUM:15}}
+{OPR:19
+{OPR:18
+{IDR:1}{NUM:0}}
+{OPR:19
+{OPR:11
+{IDR:1}{}}
+{OPR:19
+{OPR:18
+{IDR:2}{NUM:1}}
+{OPR:19
+{OPR:15
+{OPR:1
+{IDR:0}{IDR:1}}
+{OPR:19
+{OPR:18
+{IDR:2}{NUM:0}}
 {}}
 }
+{OPR:19
+{OPR:12
+{IDR:2}{}}
 {}}
+}
+}
+}
+}
+}
 

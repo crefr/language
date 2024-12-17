@@ -121,6 +121,16 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
 
             break;
 
+        case IF:
+            translateExpression(be, cur_node->left);
+
+            asmPrintf("PUSH 0\n");
+            asmPrintf("JE IF_END_%zu:\n", (size_t)cur_node);
+            makeAssemblyCodeRecursive(be, cur_node->right);
+            asmPrintf("IF_END_%zu:\n", (size_t)cur_node);
+
+            break;
+
         default:
             fprintf(stderr, "ERROR: failed to translate to asm\n");
             return;
