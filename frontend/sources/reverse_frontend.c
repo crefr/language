@@ -77,14 +77,14 @@ static void printCodeFromTreeRecursive(FILE * out_file, tree_context_t * context
 
             break;
 
-        case IF:
-            fprintf(out_file, "if (");
+        case IF: case WHILE:
+            fprintf(out_file, "%s (", opers[op_num].name);
             printCodeFromTreeRecursive(out_file, context, node->left);
             fprintf(out_file, ")\n");
 
-            fprintf(out_file, "begin\n");
+            fprintf(out_file, "%s\n", opers[BEGIN].name);
             printCodeFromTreeRecursive(out_file, context, node->right);
-            fprintf(out_file, "end");
+            fprintf(out_file, "%s", opers[ENDING].name);
 
             break;
 

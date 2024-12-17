@@ -154,7 +154,6 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
             asmPrintf("JMP WHILE_BEGIN_%zu:\n", while_index);
             asmPrintf("WHILE_END_%zu:\n", while_index);
 
-
             break;
         }
 
