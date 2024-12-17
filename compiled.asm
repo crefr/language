@@ -6,6 +6,8 @@ PUSH [0]     ; x
 PUSH 1
 ADD
 POP  [0]     ; x
+PUSH [0]     ; x
+POP  RAX
 RET
 END_OF_FUNC_foo:
 PUSH 8

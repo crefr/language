@@ -32,6 +32,7 @@ enum oper{
     WHILE,
 
     FUNC_DECL,
+    RETURN,
 
     BEGIN,
     ENDING,
@@ -74,7 +75,8 @@ const oper_t opers[] = {
     {.name = "if"   , .num = IF,    .binary = true, .commutative = false, .asm_str = NULL},
     {.name = "while", .num = WHILE, .binary = true, .commutative = false, .asm_str = NULL},
 
-    {.name = "func", .num = FUNC_DECL, .binary = true, .commutative = false, .asm_str = NULL},
+    {.name = "func",   .num = FUNC_DECL, .binary = true,  .commutative = false, .asm_str = NULL},
+    {.name = "return", .num = RETURN,    .binary = false, .commutative = false, .asm_str = NULL},
 
     {.name = "begin", .num = BEGIN,  .binary = false, .commutative = false, .asm_str = NULL},
     {.name = "end"  , .num = ENDING, .binary = false, .commutative = false, .asm_str = NULL},

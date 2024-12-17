@@ -3,6 +3,7 @@ x=0;
 func foo()
 begin
     x=x+1;
+    return x;
 end;
 
 y=8;

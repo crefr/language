@@ -223,6 +223,8 @@ static void skipSpaces(const char ** code)
 
 /*----------------------recursive descent----------------------*/
 
+typedef node_t * (* syntax_func_t)(fe_context_t * frontend);
+
 static node_t * getChain(fe_context_t * frontend);
 
 static node_t * getStatement(fe_context_t * frontend);
@@ -238,6 +240,8 @@ static node_t * getSTDfunc(fe_context_t * frontend);
 
 static node_t * getInput(fe_context_t * frontend);
 static node_t * getOutput(fe_context_t * frontend);
+
+static node_t * getReturn(fe_context_t * frontend);
 
 static node_t * getExpr(fe_context_t * frontend);
 static node_t * getMulDiv(fe_context_t * frontend);
@@ -373,32 +377,25 @@ static node_t * getStatement(fe_context_t * frontend)
 
     logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
 
-    node_t * func = getSTDfunc(frontend);
-    if (frontend->status == SUCCESS)
-        return func;
-    if (frontend->status == HARD_ERROR)
-        return NULL;
+    const syntax_func_t statement_funcs[] = {
+        getSTDfunc,
+        getIF,
+        getWhile,
+        getFuncDecl,
+        getAssign,
+        getReturn
+    };
+    const size_t num_of_funcs = sizeof(statement_funcs) / sizeof(statement_funcs[0]);
 
-    node_t * if_node = getIF(frontend);
-    if (frontend->status == SUCCESS)
-        return if_node;
-    if (frontend->status == HARD_ERROR)
-        return NULL;
+    for (size_t func_index = 0; func_index < num_of_funcs; func_index++){
+        node_t * tree = statement_funcs[func_index](frontend);
+        if (frontend->status == SUCCESS)
+            return tree;
+        if (frontend->status == HARD_ERROR)
+            return NULL;
+    }
 
-    node_t * while_node = getWhile(frontend);
-    if (frontend->status == SUCCESS)
-        return while_node;
-    if (frontend->status == HARD_ERROR)
-        return NULL;
-
-    node_t * func_node = getFuncDecl(frontend);
-    if (frontend->status == SUCCESS)
-        return func_node;
-    if (frontend->status == HARD_ERROR)
-        return NULL;
-
-    // else
-    return getAssign(frontend);
+    return NULL;
 }
 
 static node_t * getWhile(fe_context_t * frontend)
@@ -630,6 +627,32 @@ static node_t * getOutput(fe_context_t * frontend)
     output_node->right = NULL;
 
     return output_node;
+}
+
+static node_t * getReturn(fe_context_t * frontend)
+{
+    assert(frontend);
+
+    frontend->status = SUCCESS;
+
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
+
+    node_t * ret_node = token;
+    if (! tokenisOPR(RETURN)){
+        frontend->status = SOFT_ERROR;
+        return NULL;
+    }
+    token++;
+
+    node_t * expr_tree = getExpr(frontend);
+    if (frontend->status != SUCCESS){
+        frontend->status = HARD_ERROR;
+        return NULL;
+    }
+
+    ret_node->left = expr_tree;
+
+    return ret_node;
 }
 
 static node_t * getAssign(fe_context_t * frontend)

@@ -1,7 +1,7 @@
 <RESULT>  ::= <Chain>
 
 <Chain>   ::= (<Statement> ";")*
-<Statement>::= <STDfunc> | <IF> | <While> | <FuncDecl> | <Assign>
+<Statement>::= <STDfunc> | <Return> | <IF> | <While> | <FuncDecl> | <Assign>
 
 <IF>      ::= "if" "(" <Expr> ")" <Block>
 <While>   ::= "while" "(" <Expr> ")" <Block>
@@ -11,6 +11,8 @@
 
 <Assign>  ::= <Var> "=" <Expr>
 <STDfunc> ::= <Input> | <Output>
+
+<Return>  ::= "return" <Expr>
 
 <Input>   ::= "in"  "(" <Var> ")"
 <Output>  ::= "out" "(" <Expr> ")"

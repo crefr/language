@@ -164,15 +164,24 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
             asmPrintf("%s:\n", func_name);
 
             makeAssemblyCodeRecursive(be, cur_node->right);
-            asmPrintf("RET\n");
 
             asmPrintf("END_OF_FUNC_%s:\n", func_name);
 
             break;
         }
 
+        case RETURN: {
+            translateExpression(be, cur_node->left);
+
+            asmPrintf("POP  RAX\n");
+            asmPrintf("RET\n");
+
+            break;
+        }
+
+
         default:
-            fprintf(stderr, "ERROR: failed to translate to asm\n");
+            fprintf(stderr, "ERROR: failed to translate to asm (do not know this operator)\n");
             return;
     }
 }

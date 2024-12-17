@@ -4,20 +4,24 @@ nametable {
 	0001: "foo";
 	0002: "y";
 }
+{OPR:22
 {OPR:21
-{OPR:20
 {IDR:0}{NUM:0}}
-{OPR:21
+{OPR:22
 {OPR:17
-{IDR:1}{OPR:21
-{OPR:20
+{IDR:1}{OPR:22
+{OPR:21
 {IDR:0}{OPR:0
 {IDR:0}{NUM:1}}
 }
+{OPR:22
+{OPR:18
+{IDR:0}{}}
 {}}
 }
+}
+{OPR:22
 {OPR:21
-{OPR:20
 {IDR:2}{NUM:8}}
 {}}
 }
