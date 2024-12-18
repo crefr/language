@@ -1,10 +1,12 @@
 <RESULT>  ::= <Chain>
 
 <Chain>   ::= (<Statement> ";")*
-<Statement>::= <STDfunc> | <Return> | <IF> | <While> | <FuncDecl> | <Assign>
+<Statement>::= <STDfunc> | <Return> | <IF> | <While> | <VarDecl> | <FuncDecl> | <Assign>
 
 <IF>      ::= "if" "(" <Expr> ")" <Block>
 <While>   ::= "while" "(" <Expr> ")" <Block>
+
+<VarDecl> ::= "var" <ID>
 
 <FuncDecl>::= "func" <ID> "(" <Var> ("," <Var>)* ")" <Block>
 <Block>   ::= "begin" <Chain> "end"

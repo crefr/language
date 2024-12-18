@@ -235,6 +235,8 @@ static node_t * getBlock(fe_context_t * frontend);
 static node_t * getFuncDecl(fe_context_t * frontend);
 static node_t * getFuncCall(fe_context_t * frontend);
 
+static node_t * getVarDecl(fe_context_t * frontend);
+
 static node_t * getIF(fe_context_t * frontend);
 static node_t * getWhile(fe_context_t * frontend);
 
@@ -385,6 +387,7 @@ static node_t * getStatement(fe_context_t * frontend)
         getIF,
         getWhile,
         getFuncDecl,
+        getVarDecl,
         getAssign,
         getReturn
     };
@@ -859,6 +862,34 @@ static node_t * getPrimary(fe_context_t * frontend)
     return NULL;
 }
 
+static node_t * getVarDecl(fe_context_t * frontend)
+{
+    assert(frontend);
+
+    frontend->status = SUCCESS;
+
+    logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
+
+    if (! tokenisOPR(VAR_DECL)){
+        frontend->status = SOFT_ERROR;
+        return NULL;
+    }
+    node_t * decl_node = token;
+    token++;
+
+    if (token->type != IDR){
+        frontend->status = HARD_ERROR;
+        return NULL;
+    }
+    node_t * id_node = token;
+    token++;
+
+    frontend->ids[id_node->val.id].type = VAR;
+    decl_node->left = id_node;
+
+    return decl_node;
+}
+
 static node_t * getFuncCall(fe_context_t * frontend)
 {
     assert(frontend);
@@ -889,7 +920,7 @@ static node_t * getFuncCall(fe_context_t * frontend)
     frontend->ids[func_node->val.id].type = FUNC;
 
     // if there are no arguments given
-    if (token->type != IDR){
+    if (tokenisOPR(RBRACKET)){
         // so we do not actually need arg tree
         arg_tree = NULL;
     }

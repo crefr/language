@@ -2,6 +2,7 @@
 #define TREE_INCLUDED
 
 #include <stdbool.h>
+#include <stdlib.h>
 
 enum elem_type{
     NUM = 0,
@@ -33,6 +34,8 @@ enum oper{
     IF,
     WHILE,
 
+    VAR_DECL,
+
     CALL,
     FUNC_DECL,
     FUNC_HEADER,
@@ -44,8 +47,6 @@ enum oper{
 
     ASSIGN,
     SEP,
-
-
 
     NO_OP
 };
@@ -81,6 +82,8 @@ const oper_t opers[] = {
 
     {.name = "if"   , .num = IF,    .binary = true, .commutative = false, .asm_str = NULL},
     {.name = "while", .num = WHILE, .binary = true, .commutative = false, .asm_str = NULL},
+
+    {.name = "var", .num = VAR_DECL, .binary = false, .commutative = false, .asm_str = NULL},
 
     {.name = NULL,    .num = CALL, .binary = true,  .commutative = false, .asm_str = NULL},
     {.name = "func",  .num = FUNC_DECL, .binary = true,  .commutative = false, .asm_str = NULL},
@@ -122,12 +125,12 @@ enum id_type {
 
 typedef struct {
     char name[NAME_MAX_LENGTH];
-    enum id_type type;       // is VAR by default
+    enum id_type type;         // is VAR by default
 
     bool is_local;
-    size_t parent_function;  // for local vars to show which function they are belonging to
+    size_t parent_function;    // for local vars to show which function they are belonging to
 
-    size_t address;          // address of the var in RAM, if local, must be added to base pointer
+    long int address;          // address of the var in RAM, if local, must be added to base pointer
 } idr_t;
 
 typedef struct {

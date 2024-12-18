@@ -88,8 +88,7 @@ static void asmPrintVAR(be_context_t * be, size_t var_index)
     assert(be);
 
     if (! be->ids[var_index].is_local) {
-        // TODO: make memory indexes independent from indexes in name table
-        asmPrintf(" [%u]     ; %s\n", var_index, be->ids[var_index].name);
+        asmPrintf(" [%u]     ; %s\n", be->ids[var_index].address, be->ids[var_index].name);
         return;
     }
 
@@ -103,6 +102,9 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
     /*-----static variables used to generate asm code properly-----*/
     static size_t if_counter = 0;
     static size_t while_counter = 0;
+
+    static size_t global_var_counter = 0;
+    static size_t  local_var_counter = 0;
 
     static bool in_function = false;
     /*-------------------------------------------------------------*/
@@ -126,6 +128,26 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
             size_t id_index = cur_node->left->val.id;
 
             asmPrintVAR(be, id_index);
+
+            break;
+        }
+
+        case VAR_DECL: {
+            node_t * var_node = cur_node->left;
+            size_t id_index = var_node->val.id;
+
+            if (in_function){
+                be->ids[id_index].is_local = true;
+                be->ids[id_index].address = local_var_counter;
+
+                local_var_counter++;
+            }
+            else {
+                be->ids[id_index].is_local = false;
+                be->ids[id_index].address = global_var_counter;
+
+                global_var_counter++;
+            }
 
             break;
         }
@@ -178,6 +200,9 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
         }
 
         case FUNC_DECL: {
+            local_var_counter = 0;
+            in_function = true;
+
             // making arguments local and giving them addresses
             node_t * cur_arg_node = cur_node->left->right;
 
@@ -194,6 +219,9 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
                 cur_arg_node = cur_arg_node->right;
             }
 
+            // args are local vars too
+            local_var_counter += arg_index;
+
             // taking func_name from left node of FUNC_HEADER node
             const char * func_name = be->ids[cur_node->left->left->val.id].name;
 
@@ -203,14 +231,13 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
 
             // body of the function
             // dealing with base pointer (old RBX going to RCX)
-            asmPrintf("PUSH RBX\nPOP  RCX\n");
+            asmPrintf("PUSH RBX\n");
 
             makeAssemblyCodeRecursive(be, cur_node->right);
 
-            // returning base pointer to old value
-            asmPrintf("PUSH RCX\nPOP  RBX\n");
-
             asmPrintf("END_OF_FUNC_%s:\n", func_name);
+
+            in_function = false;
 
             break;
         }
@@ -219,6 +246,10 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
             translateExpression(be, cur_node->left);
 
             asmPrintf("POP  RAX\n");
+
+            // returning base pointer to old value
+            asmPrintf("POP  RBX\n");
+
             asmPrintf("RET\n");
 
             break;
@@ -227,9 +258,7 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
         case CALL: {
             const char * func_name = be->ids[cur_node->left->val.id].name;
 
-            // setting base pointer (RBX)
-            asmPrintf("PUSH %zu\n", 0);  // TODO: give a valid number here
-            asmPrintf("POP  RBX\n");
+            asmPrintf("; call\n");
 
             // giving arguments to the function
             node_t * cur_arg_node = cur_node->right;
@@ -237,17 +266,36 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
             // args adresses are RBX+0, RBX+1, RBX+2, etc.
             size_t arg_index = 0;
 
+            asmPrintf("; giving args\n");
             while (cur_arg_node != NULL){
                 translateExpression(be, cur_arg_node->left);
 
-                asmPrintf("POP  [RBX %zu]\n", arg_index);
+                // we need to add ...var_counter because we have not yet shifted base pointer (RBX)
+                if (in_function)
+                    asmPrintf("POP  [RBX %zu]\n", arg_index + local_var_counter);
+                else
+                    asmPrintf("POP  [%zu]\n", arg_index + global_var_counter);
 
                 arg_index++;
                 cur_arg_node = cur_arg_node->right;
             }
+            asmPrintf("; ended giving args\n");
+
+            // setting base pointer (RBX)
+            asmPrintf("; shifting base pointer (RBX)\n");
+            if (in_function)
+                asmPrintf("PUSH RBX %zu\n", local_var_counter);
+            else
+                asmPrintf("PUSH %zu\n", global_var_counter);
+
+            asmPrintf("POP  RBX\n");
+
+            asmPrintf("; ended shifting base pointer (RBX)\n");
 
             asmPrintf("CALL %s:\n", func_name);
             asmPrintf("PUSH RAX\n");
+
+            asmPrintf("; call ended\n");
 
             break;
         }
