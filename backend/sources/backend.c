@@ -12,6 +12,16 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node);
 
 static void translateExpression(be_context_t * be, node_t * cur_node);
 
+static void translateFuncDecl(be_context_t * be, node_t * cur_node);
+
+static void translateCall(be_context_t * be, node_t * cur_node);
+
+static void translateVarDecl(be_context_t * be, node_t * cur_node);
+
+static void translateWhile(be_context_t * be, node_t * cur_node);
+
+static void translateIf(be_context_t * be, node_t * cur_node);
+
 be_context_t backendInit(size_t nodes_num, const char * asm_file_name, const char * tree_file_name)
 {
     assert(asm_file_name);
@@ -20,7 +30,11 @@ be_context_t backendInit(size_t nodes_num, const char * asm_file_name, const cha
     be_context_t context = {};
 
     context.asm_file = fopen(asm_file_name, "w");
-    assert(context.asm_file);   // TODO: make if-statement
+
+    if (! context.asm_file){
+        fprintf(stderr, "BACKEND: cannot open tree file\n");
+        return context; // TODO: need to return error code
+    }
 
     context.nodes = (node_t *)calloc(nodes_num, sizeof(node_t));
     context.tree_size = nodes_num;
@@ -99,16 +113,6 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
 {
     assert(be);
 
-    /*-----static variables used to generate asm code properly-----*/
-    static size_t if_counter = 0;
-    static size_t while_counter = 0;
-
-    static size_t global_var_counter = 0;
-    static size_t  local_var_counter = 0;
-
-    static bool in_function = false;
-    /*-------------------------------------------------------------*/
-
     if (cur_node == NULL)
         return;
 
@@ -133,21 +137,7 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
         }
 
         case VAR_DECL: {
-            node_t * var_node = cur_node->left;
-            size_t id_index = var_node->val.id;
-
-            if (in_function){
-                be->ids[id_index].is_local = true;
-                be->ids[id_index].address = local_var_counter;
-
-                local_var_counter++;
-            }
-            else {
-                be->ids[id_index].is_local = false;
-                be->ids[id_index].address = global_var_counter;
-
-                global_var_counter++;
-            }
+            translateVarDecl(be, cur_node);
 
             break;
         }
@@ -167,75 +157,19 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
             break;
 
         case IF: {
-            size_t if_index = if_counter;
-            if_counter++;
+            translateIf(be, cur_node);
 
-            translateExpression(be, cur_node->left);
-
-            asmPrintf("PUSH 0\n");
-            asmPrintf("JE IF_END_%zu:\n", if_index);
-            makeAssemblyCodeRecursive(be, cur_node->right);
-            asmPrintf("IF_END_%zu:\n", if_index);
-
-            if_counter++;
             break;
         }
 
         case WHILE: {
-            size_t while_index = while_counter;
-            while_counter++;
-
-            asmPrintf("WHILE_BEGIN_%zu:\n", while_index);
-
-            translateExpression(be, cur_node->left);
-            asmPrintf("PUSH 0\n");
-            asmPrintf("JE WHILE_END_%zu:\n", while_index);
-
-            makeAssemblyCodeRecursive(be, cur_node->right);
-
-            asmPrintf("JMP WHILE_BEGIN_%zu:\n", while_index);
-            asmPrintf("WHILE_END_%zu:\n", while_index);
+            translateWhile(be, cur_node);
 
             break;
         }
 
         case FUNC_DECL: {
-            local_var_counter = 0;
-            in_function = true;
-
-            // making arguments local and giving them addresses
-            node_t * cur_arg_node = cur_node->left->right;
-
-            // args adresses are RBX+0, RBX+1, RBX+2, etc.
-            size_t arg_index = 0;
-
-            while (cur_arg_node != NULL){
-                size_t cur_id = cur_arg_node->left->val.id;
-
-                be->ids[cur_id].is_local = true;
-                be->ids[cur_id].address  = arg_index;
-
-                arg_index++;
-                cur_arg_node = cur_arg_node->right;
-            }
-
-            // args are local vars too
-            local_var_counter += arg_index;
-
-            // taking func_name from left node of FUNC_HEADER node
-            const char * func_name = be->ids[cur_node->left->left->val.id].name;
-
-            asmPrintf("JMP END_OF_FUNC_%s: ;skipping func body\n", func_name);
-
-            asmPrintf("%s:\n", func_name);
-
-            // body of the function
-
-            makeAssemblyCodeRecursive(be, cur_node->right);
-
-            asmPrintf("END_OF_FUNC_%s:\n", func_name);
-
-            in_function = false;
+            translateFuncDecl(be, cur_node);
 
             break;
         }
@@ -251,55 +185,7 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
         }
 
         case CALL: {
-            const char * func_name = be->ids[cur_node->left->val.id].name;
-
-            asmPrintf("; call\n");
-
-            // giving arguments to the function
-            node_t * cur_arg_node = cur_node->right;
-
-            // args adresses are RBX+0, RBX+1, RBX+2, etc.
-            size_t arg_index = 0;
-
-            asmPrintf("; giving args\n");
-            while (cur_arg_node != NULL){
-                translateExpression(be, cur_arg_node->left);
-
-                // we need to add ...var_counter because we have not yet shifted base pointer (RBX)
-                if (in_function)
-                    asmPrintf("POP  [RBX %zu]\n", arg_index + local_var_counter);
-                else
-                    asmPrintf("POP  [%zu]\n", arg_index + global_var_counter);
-
-                arg_index++;
-                cur_arg_node = cur_arg_node->right;
-            }
-            asmPrintf("; ended giving args\n");
-
-            // setting base pointer (RBX)
-
-            // old base pointer
-            asmPrintf("; pushing old base pointer (RBX)\n");
-            asmPrintf("PUSH RBX\n");
-
-            asmPrintf("; shifting base pointer (RBX)\n");
-            if (in_function)
-                asmPrintf("PUSH RBX %zu\n", local_var_counter);
-            else
-                asmPrintf("PUSH %zu\n", global_var_counter);
-            asmPrintf("POP  RBX\n");
-
-            asmPrintf("; ended shifting base pointer (RBX)\n");
-
-            asmPrintf("CALL %s:\n", func_name);
-
-            // returning old base pointer
-            asmPrintf("POP  RBX\n");
-
-            asmPrintf("PUSH RAX\n");
-
-            asmPrintf("; call ended\n");
-
+            translateCall(be, cur_node);
 
             break;
         }
@@ -308,6 +194,153 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
             fprintf(stderr, "ERROR: failed to translate to asm (do not know this operator)\n");
             return;
     }
+}
+
+static void translateIf(be_context_t * be, node_t * cur_node)
+{
+    size_t if_index = be->if_counter;
+    be->if_counter++;
+
+    translateExpression(be, cur_node->left);
+
+    asmPrintf("PUSH 0\n");
+    asmPrintf("JE IF_END_%zu:\n", if_index);
+    makeAssemblyCodeRecursive(be, cur_node->right);
+    asmPrintf("IF_END_%zu:\n", if_index);
+
+    be->if_counter++;
+}
+
+static void translateWhile(be_context_t * be, node_t * cur_node)
+{
+    size_t while_index = be->while_counter;
+    be->while_counter++;
+
+    asmPrintf("WHILE_BEGIN_%zu:\n", while_index);
+
+    translateExpression(be, cur_node->left);
+    asmPrintf("PUSH 0\n");
+    asmPrintf("JE WHILE_END_%zu:\n", while_index);
+
+    makeAssemblyCodeRecursive(be, cur_node->right);
+
+    asmPrintf("JMP WHILE_BEGIN_%zu:\n", while_index);
+    asmPrintf("WHILE_END_%zu:\n", while_index);
+}
+
+static void translateVarDecl(be_context_t * be, node_t * cur_node)
+{
+    node_t * var_node = cur_node->left;
+    size_t id_index = var_node->val.id;
+
+    if (be->in_function){
+        be->ids[id_index].is_local = true;
+        be->ids[id_index].address = be->local_var_counter;
+
+        be->local_var_counter++;
+    }
+    else {
+        be->ids[id_index].is_local = false;
+        be->ids[id_index].address = be->global_var_counter;
+
+        be->global_var_counter++;
+    }
+}
+
+static void translateFuncDecl(be_context_t * be, node_t * cur_node)
+{
+    be->local_var_counter = 0;
+    be->in_function = true;
+
+    // making arguments local and giving them addresses
+    node_t * cur_arg_node = cur_node->left->right;
+
+    // args adresses are RBX+0, RBX+1, RBX+2, etc.
+    size_t arg_index = 0;
+
+    while (cur_arg_node != NULL){
+        size_t cur_id = cur_arg_node->left->val.id;
+
+        be->ids[cur_id].is_local = true;
+        be->ids[cur_id].address  = arg_index;
+
+        arg_index++;
+        cur_arg_node = cur_arg_node->right;
+    }
+
+    // args are local vars too
+    be->local_var_counter += arg_index;
+
+    // taking func_name from left node of FUNC_HEADER node
+    const char * func_name = be->ids[cur_node->left->left->val.id].name;
+
+    asmPrintf("JMP END_OF_FUNC_%s: ;skipping func body\n", func_name);
+
+    asmPrintf("%s:\n", func_name);
+
+    // body of the function
+
+    makeAssemblyCodeRecursive(be, cur_node->right);
+
+    asmPrintf("END_OF_FUNC_%s:\n", func_name);
+
+    be->in_function = false;
+}
+
+static void translateCall(be_context_t * be, node_t * cur_node)
+{
+    const char * func_name = be->ids[cur_node->left->val.id].name;
+
+    asmPrintf("; call\n");
+
+    // giving arguments to the function
+    node_t * cur_arg_node = cur_node->right;
+
+    // args adresses are RBX+0, RBX+1, RBX+2, etc.
+    size_t arg_index = 0;
+
+    asmPrintf("; giving args\n");
+    while (cur_arg_node != NULL){
+        translateExpression(be, cur_arg_node->left);
+
+        // we need to add ...var_counter because we have not yet shifted base pointer (RBX)
+        if (be->in_function){
+            asmPrintf("POP  [RBX %zu]", arg_index + be->local_var_counter);
+            asmPrintf("     ; %zu + %zu\n", arg_index, be->local_var_counter);
+        }
+        else {
+            asmPrintf("POP  [%zu]", arg_index + be->global_var_counter);
+            asmPrintf("     ; %zu + %zu\n", arg_index, be->global_var_counter);
+        }
+
+        arg_index++;
+        cur_arg_node = cur_arg_node->right;
+    }
+    asmPrintf("; ended giving args\n");
+
+    // setting base pointer (RBX)
+
+    // old base pointer
+    asmPrintf("; pushing old base pointer (RBX)\n");
+    asmPrintf("PUSH RBX\n");
+
+    asmPrintf("; shifting base pointer (RBX)\n");
+    if (be->in_function)
+        asmPrintf("PUSH RBX %zu\n", be->local_var_counter);
+    else
+        asmPrintf("PUSH %zu\n", be->global_var_counter);
+    asmPrintf("POP  RBX\n");
+
+    asmPrintf("; ended shifting base pointer (RBX)\n");
+
+    asmPrintf("CALL %s:\n", func_name);
+
+    // returning old base pointer
+    asmPrintf("POP  RBX\n");
+
+    asmPrintf("PUSH RAX\n");
+
+    asmPrintf("; call ended\n");
 }
 
 static void translateExpression(be_context_t * be, node_t * cur_node)

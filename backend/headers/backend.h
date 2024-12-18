@@ -16,6 +16,14 @@ typedef struct {
 
     idr_t ids[MAX_IDR_NUM];
     unsigned int id_size;
+
+    size_t if_counter;
+    size_t while_counter;
+
+    size_t global_var_counter;
+    size_t  local_var_counter;
+
+    bool in_function;
 } be_context_t;
 
 /// @brief initialise context structure and read the tree for further actions
