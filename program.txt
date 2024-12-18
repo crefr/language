@@ -1,8 +1,9 @@
-x = foo(x, y, z);
+x = foo(x + 5, y, z);
+d = 4;
 
 func foo(a, b ,c)
 begin
-    a = 5;
+    a = d;
     b = 6;
     c = 7;
 

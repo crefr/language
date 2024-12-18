@@ -1,6 +1,8 @@
 #ifndef TREE_INCLUDED
 #define TREE_INCLUDED
 
+#include <stdbool.h>
+
 enum elem_type{
     NUM = 0,
     OPR = 1,
@@ -120,9 +122,12 @@ enum id_type {
 
 typedef struct {
     char name[NAME_MAX_LENGTH];
-    enum id_type type;  // is VAR by default
+    enum id_type type;       // is VAR by default
 
-    size_t parent_function;  // for vars to show which function they are belonging to
+    bool is_local;
+    size_t parent_function;  // for local vars to show which function they are belonging to
+
+    size_t address;          // address of the var in RAM, if local, must be added to base pointer
 } idr_t;
 
 typedef struct {

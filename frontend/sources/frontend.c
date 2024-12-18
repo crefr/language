@@ -901,12 +901,11 @@ static node_t * getFuncCall(fe_context_t * frontend)
         arg_tree->val.op = ARG_SEP;
 
         // first arg handling
-        if (token->type != IDR){
+        node_t * first_arg_node = getExpr(frontend);
+        if (frontend->status != SUCCESS){
             frontend->status = HARD_ERROR;
             return NULL;
         }
-        node_t * first_arg_node = token;
-        token++;
 
         arg_tree->left  = first_arg_node;
         arg_tree->right = NULL;
@@ -917,12 +916,12 @@ static node_t * getFuncCall(fe_context_t * frontend)
 
         while (cur_sep->type == OPR && cur_sep->val.op == ARG_SEP){
             token++;
-            if (token->type != IDR){
+
+            node_t * cur_arg_node = getExpr(frontend);
+            if (frontend->status != SUCCESS){
                 frontend->status = HARD_ERROR;
                 return NULL;
             }
-            node_t * cur_arg_node = token;
-            token++;
 
             last_sep->right = cur_sep;
 

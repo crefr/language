@@ -122,7 +122,7 @@ static int readNameTable(tree_context_t * tree, const char ** cur_pos)
     sscanf(*cur_pos, " %[^{ ] {%n", buffer, &shift);
     *cur_pos += shift;
 
-    logPrint(LOG_DEBUG, "read name table name: '%s'\n", buffer);
+    logPrint(LOG_DEBUG, "read nametable name: '%s'\n", buffer);
 
     if (strcmp(buffer, "nametable") != 0)
         return 0;
@@ -140,6 +140,8 @@ static int readNameTable(tree_context_t * tree, const char ** cur_pos)
         logPrint(LOG_DEBUG, "scanned name: %04zu, \"%s\", %s;\n", index, name_buf, type_buf);
 
         strcpy(tree->ids[index].name, name_buf);
+
+        tree->ids[index].is_local = false; // value by default
 
         if (strcmp(type_buf, "FUNC") == 0)
             tree->ids[index].type = FUNC;
