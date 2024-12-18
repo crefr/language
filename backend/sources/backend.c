@@ -230,8 +230,6 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
             asmPrintf("%s:\n", func_name);
 
             // body of the function
-            // dealing with base pointer (old RBX going to RCX)
-            asmPrintf("PUSH RBX\n");
 
             makeAssemblyCodeRecursive(be, cur_node->right);
 
@@ -246,9 +244,6 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
             translateExpression(be, cur_node->left);
 
             asmPrintf("POP  RAX\n");
-
-            // returning base pointer to old value
-            asmPrintf("POP  RBX\n");
 
             asmPrintf("RET\n");
 
@@ -282,20 +277,29 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
             asmPrintf("; ended giving args\n");
 
             // setting base pointer (RBX)
+
+            // old base pointer
+            asmPrintf("; pushing old base pointer (RBX)\n");
+            asmPrintf("PUSH RBX\n");
+
             asmPrintf("; shifting base pointer (RBX)\n");
             if (in_function)
                 asmPrintf("PUSH RBX %zu\n", local_var_counter);
             else
                 asmPrintf("PUSH %zu\n", global_var_counter);
-
             asmPrintf("POP  RBX\n");
 
             asmPrintf("; ended shifting base pointer (RBX)\n");
 
             asmPrintf("CALL %s:\n", func_name);
+
+            // returning old base pointer
+            asmPrintf("POP  RBX\n");
+
             asmPrintf("PUSH RAX\n");
 
             asmPrintf("; call ended\n");
+
 
             break;
         }

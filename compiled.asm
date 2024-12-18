@@ -4,23 +4,24 @@
 PUSH 5
 POP  [0]
 ; ended giving args
+; pushing old base pointer (RBX)
+PUSH RBX
 ; shifting base pointer (RBX)
 PUSH 0
 POP  RBX
 ; ended shifting base pointer (RBX)
 CALL factorial:
+POP  RBX
 PUSH RAX
 ; call ended
 OUT
 JMP END_OF_FUNC_factorial: ;skipping func body
 factorial:
-PUSH RBX
 PUSH [RBX 0] ; number (local)
 PUSH 1
 SUB
 PUSH 0
 JE IF_END_0:
-PUSH [RBX 0] ; number (local)
 ; call
 ; giving args
 PUSH [RBX 0] ; number (local)
@@ -28,23 +29,25 @@ PUSH 1
 SUB
 POP  [RBX 2]
 ; ended giving args
+; pushing old base pointer (RBX)
+PUSH RBX
 ; shifting base pointer (RBX)
 PUSH RBX 2
 POP  RBX
 ; ended shifting base pointer (RBX)
 CALL factorial:
+POP  RBX
 PUSH RAX
 ; call ended
+PUSH [RBX 0] ; number (local)
 MUL
 POP  [RBX 1] ; answer (local)
 PUSH [RBX 1] ; answer (local)
 POP  RAX
-POP  RBX
 RET
 IF_END_0:
 PUSH 1
 POP  RAX
-POP  RBX
 RET
 END_OF_FUNC_factorial:
 HLT

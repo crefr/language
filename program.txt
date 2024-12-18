@@ -5,7 +5,7 @@ begin
     if (number-1)
     begin
         var answer;
-        answer = number * factorial(number - 1) ;
+        answer = factorial(number - 1) * number;
 
         return answer;
     end;
