@@ -171,7 +171,6 @@ static void dotPrintNode(tree_context_t * tree, FILE * dot_file, node_t * node)
         }
         sprintf(elem_str, "type = OPR, val = '%s'", name);
 
-
         // we need fictive operators to be another color
         if (node->val.op == SEP || node->val.op == ARG_SEP)
             color_to_dump = FIC_COLOR;

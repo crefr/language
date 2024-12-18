@@ -829,7 +829,6 @@ static node_t * getPrimary(fe_context_t * frontend)
 
             return NULL;
         }
-
         token++;
 
         return node;
@@ -881,21 +880,69 @@ static node_t * getFuncCall(fe_context_t * frontend)
 
         return NULL;
     }
-    node_t * call_node = token;
+
+    // we will transform this node into ARG_SEP
+    node_t * arg_tree = token;
     token++;
-
-    call_node->val.op = CALL;
-    call_node->left = func_node;
-
-    // not forever...
-    call_node->right = NULL;
 
     // it has left bracket so it is a function
     frontend->ids[func_node->val.id].type = FUNC;
 
-    // here also can be your ads, but must be args handling...
+    // if there are no arguments given
+    if (token->type != IDR){
+        // so we do not actually need arg tree
+        arg_tree = NULL;
+    }
+    else {
+        // so we have at least one argument
 
+        // transforming left bracket into ARG_SEP
+        arg_tree->type = OPR;
+        arg_tree->val.op = ARG_SEP;
+
+        // first arg handling
+        if (token->type != IDR){
+            frontend->status = HARD_ERROR;
+            return NULL;
+        }
+        node_t * first_arg_node = token;
+        token++;
+
+        arg_tree->left  = first_arg_node;
+        arg_tree->right = NULL;
+
+        // handling other args
+        node_t * last_sep = arg_tree;
+        node_t * cur_sep  = token;
+
+        while (cur_sep->type == OPR && cur_sep->val.op == ARG_SEP){
+            token++;
+            if (token->type != IDR){
+                frontend->status = HARD_ERROR;
+                return NULL;
+            }
+            node_t * cur_arg_node = token;
+            token++;
+
+            last_sep->right = cur_sep;
+
+            cur_sep->left  = cur_arg_node;
+            cur_sep->right = NULL;
+
+            last_sep = cur_sep;
+
+            cur_sep = token;
+        }
+    }
+
+    node_t * call_node = token;
     RBRACKET_SKIP;
+
+    call_node->val.op = CALL;
+    call_node->left = func_node;
+
+    // right subtree is arg tree
+    call_node->right = arg_tree;
 
     return call_node;
 }

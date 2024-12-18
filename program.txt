@@ -1,8 +1,10 @@
-func foo(a, b, c)
+x = foo(x, y, z);
+
+func foo(a, b ,c)
 begin
     a = 5;
     b = 6;
     c = 7;
 
-    return 0;
+    return a;
 end;
