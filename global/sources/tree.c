@@ -135,6 +135,8 @@ const uint32_t IDR_COLOR = 0xFFAAAAFF;
 const uint32_t NUM_COLOR = 0xAAAAFFFF;
 const uint32_t OPR_COLOR = 0xAAFFAAFF;
 
+const uint32_t FIC_COLOR = 0xDDDDDDFF;
+
 static void dotPrintNode(tree_context_t * tree, FILE * dot_file, node_t * node)
 {
     size_t node_num = (size_t)node;
@@ -149,11 +151,37 @@ static void dotPrintNode(tree_context_t * tree, FILE * dot_file, node_t * node)
         color_to_dump = NUM_COLOR;
     }
     else if (node->type == OPR){
-        sprintf(elem_str, "type = OPR, val = '%s'", opers[node->val.op].name);
-        color_to_dump = OPR_COLOR;
+        const char * name = NULL;
+
+        if (opers[node->val.op].name != NULL)
+            name = opers[node->val.op].name;
+        else {
+            switch (node->val.op){
+                case CALL:
+                    name = "_CALL_";
+                    break;
+
+                case FUNC_HEADER:
+                    name = "__FUNC_HEADER__";
+                    break;
+
+                default:
+                    break; // literally do not know what else to do here...
+            }
+        }
+        sprintf(elem_str, "type = OPR, val = '%s'", name);
+
+
+        // we need fictive operators to be another color
+        if (node->val.op == SEP || node->val.op == ARG_SEP)
+            color_to_dump = FIC_COLOR;
+        else
+            color_to_dump = OPR_COLOR;
     }
     else if (node->type == IDR){
-        sprintf(elem_str, "type = IDR, val = '%s'", tree->ids[node->val.op].name);
+        const char * type_str = (tree->ids[node->val.id].type == VAR) ? "VAR" : "FUNC";
+
+        sprintf(elem_str, "type = IDR, val = '%s', IDR_type = %s", tree->ids[node->val.op].name, type_str);
         color_to_dump = IDR_COLOR;
     }
 
