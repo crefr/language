@@ -34,6 +34,7 @@ enum oper{
     CALL,
     FUNC_DECL,
     FUNC_HEADER,
+    ARG_SEP,
     RETURN,
 
     BEGIN,
@@ -82,6 +83,7 @@ const oper_t opers[] = {
     {.name = NULL,    .num = CALL, .binary = true,  .commutative = false, .asm_str = NULL},
     {.name = "func",  .num = FUNC_DECL, .binary = true,  .commutative = false, .asm_str = NULL},
     {.name = NULL,    .num = FUNC_HEADER, .binary = true,  .commutative = false, .asm_str = NULL},
+    {.name = ",",    .num = ARG_SEP, .binary = true,  .commutative = false, .asm_str = NULL},
     {.name = "return",.num = RETURN,    .binary = false, .commutative = false, .asm_str = NULL},
 
     {.name = "begin", .num = BEGIN,  .binary = false, .commutative = false, .asm_str = NULL},
@@ -118,7 +120,9 @@ enum id_type {
 
 typedef struct {
     char name[NAME_MAX_LENGTH];
-    enum id_type type; // is VAR by default
+    enum id_type type;  // is VAR by default
+
+    size_t parent_function;  // for vars to show which function they are belonging to
 } idr_t;
 
 typedef struct {

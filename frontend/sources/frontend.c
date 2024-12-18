@@ -392,8 +392,10 @@ static node_t * getStatement(fe_context_t * frontend)
 
     for (size_t func_index = 0; func_index < num_of_funcs; func_index++){
         node_t * tree = statement_funcs[func_index](frontend);
+
         if (frontend->status == SUCCESS)
             return tree;
+
         if (frontend->status == HARD_ERROR)
             return NULL;
     }
@@ -466,21 +468,69 @@ static node_t * getFuncDecl(fe_context_t * frontend)
     // setting type to FUNC in name table
     frontend->ids[id_node->val.id].type = FUNC;
 
+    // we will use this node later
+    node_t * arg_tree = token;
     LBRACKET_SKIP;
 
-    // there could be your ads but must be args of the function handling. will be soon...
+    // if there are no arguments given
+    if (token->type != IDR){
+        // so we do not actually need arg tree
+        arg_tree = NULL;
+    }
+    else {
+        // so we have at least one argument
 
-    // transfroming right bracket into a FUNC_HEADER
+        // transforming left bracket into ARG_SEP
+        arg_tree->type = OPR;
+        arg_tree->val.op = ARG_SEP;
+
+        // first arg handling
+        if (token->type != IDR){
+            frontend->status = HARD_ERROR;
+            return NULL;
+        }
+        node_t * first_arg_node = token;
+        token++;
+
+        arg_tree->left  = first_arg_node;
+        arg_tree->right = NULL;
+
+        // handling other args
+        node_t * last_sep = arg_tree;
+        node_t * cur_sep  = token;
+
+        while (cur_sep->type == OPR && cur_sep->val.op == ARG_SEP){
+            token++;
+            if (token->type != IDR){
+                frontend->status = HARD_ERROR;
+                return NULL;
+            }
+            node_t * cur_arg_node = token;
+            token++;
+
+            last_sep->right = cur_sep;
+
+            cur_sep->left  = cur_arg_node;
+            cur_sep->right = NULL;
+
+            last_sep = cur_sep;
+
+            cur_sep = token;
+        }
+    }
+
+    // we will use this node later
     node_t * func_header = token;
     RBRACKET_SKIP;
 
+    // transforming right bracket into a FUNC_HEADER
     func_header->type = OPR;
     func_header->val.op = FUNC_HEADER;
 
     func_header->left = id_node;
 
-    // not forever... there should be args
-    func_header->right = NULL;
+    // there is arg tree on the right
+    func_header->right = arg_tree;
 
     node_t * body_tree = getBlock(frontend);
     if (frontend->status != SUCCESS){
@@ -574,25 +624,13 @@ static node_t * getInput(fe_context_t * frontend)
     node_t * input_node = token;
     token++;
 
-    if (!(token->type == OPR && token->val.op == LBRACKET)){
-        frontend->status = HARD_ERROR;
-        syntaxError("(", token);
-
-        return NULL;
-    }
-    token++;
+    LBRACKET_SKIP;
 
     node_t * var_node = getId(frontend);
     if (frontend->status != SUCCESS)
         return NULL;
 
-    if (!(token->type == OPR && token->val.op == RBRACKET)){
-        frontend->status = HARD_ERROR;
-        syntaxError(")", token);
-
-        return NULL;
-    }
-    token++;
+    RBRACKET_SKIP;
 
     input_node->left  = var_node;
     input_node->right = NULL;
@@ -616,25 +654,13 @@ static node_t * getOutput(fe_context_t * frontend)
     node_t * output_node = token;
     token++;
 
-    if (!(token->type == OPR && token->val.op == LBRACKET)){
-        frontend->status = HARD_ERROR;
-        syntaxError("(", token);
-
-        return NULL;
-    }
-    token++;
+    LBRACKET_SKIP;
 
     node_t * expr_tree = getExpr(frontend);
     if (frontend->status != SUCCESS)
         return NULL;
 
-    if (!(token->type == OPR && token->val.op == RBRACKET)){
-        frontend->status = HARD_ERROR;
-        syntaxError(")", token);
-
-        return NULL;
-    }
-    token++;
+    RBRACKET_SKIP;
 
     output_node->left  = expr_tree;
     output_node->right = NULL;
@@ -899,7 +925,7 @@ static node_t * getId(fe_context_t * frontend)
 
     logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens));
 
-    if (!(token->type == IDR)){
+    if (token->type != IDR){
         frontend->status  = SOFT_ERROR;
 
         return NULL;
