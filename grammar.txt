@@ -3,7 +3,9 @@
 <Chain>   ::= (<Statement> ";")*
 <Statement>::= <STDfunc> | <Return> | <IF> | <While> | <VarDecl> | <FuncDecl> | <Assign>
 
-<IF>      ::= "if" "(" <Expr> ")" <Block>
+<IF>      ::= "if" "(" <Expr> ")" <Block> (<ELSE>)?
+<ELSE>    ::= "else" <Block>
+
 <While>   ::= "while" "(" <Expr> ")" <Block>
 
 <VarDecl> ::= "var" <ID>

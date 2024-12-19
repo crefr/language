@@ -19,6 +19,8 @@ static node_t * getFuncCall(fe_context_t * frontend);
 static node_t * getVarDecl(fe_context_t * frontend);
 
 static node_t * getIF(fe_context_t * frontend);
+static node_t * getElse(fe_context_t * frontend);
+
 static node_t * getWhile(fe_context_t * frontend);
 
 static node_t * getAssign(fe_context_t * frontend);
@@ -332,6 +334,36 @@ static node_t * getFuncDecl(fe_context_t * frontend)
     return func;
 }
 
+static node_t * getElse(fe_context_t * frontend)
+{
+    assert(frontend);
+
+    LOG_SYNTAX_FUNC_INFO;
+
+    frontend->status = SUCCESS;
+
+    if (! tokenisOPR(IF_ELSE)){
+        frontend->status = SOFT_ERROR;
+        return NULL;
+    }
+    node_t * if_else_node = token;
+    token++;
+
+    node_t * else_body_tree = getBlock(frontend);
+    if (else_body_tree == NULL){
+        frontend->status = HARD_ERROR;
+        return NULL;
+    }
+
+    // on the left should be IF body
+    if_else_node->left  = NULL;
+    if_else_node->right = else_body_tree;
+
+    frontend->status = SUCCESS;
+
+    return if_else_node;
+}
+
 static node_t * getIF(fe_context_t * frontend)
 {
     assert(frontend);
@@ -358,16 +390,28 @@ static node_t * getIF(fe_context_t * frontend)
 
     RBRACKET_SKIP;
 
-    node_t * body_tree = getBlock(frontend);
-    if (body_tree == NULL){
+    node_t * if_body_tree = getBlock(frontend);
+    if (if_body_tree == NULL){
         frontend->status = HARD_ERROR;
         return NULL;
     }
 
-    if_node->left  = cond_tree;
-    if_node->right = body_tree;
+    node_t * else_body_tree = getElse(frontend);
+    if (frontend->status == HARD_ERROR)
+        return NULL;
 
     frontend->status = SUCCESS;
+
+    if_node->left  = cond_tree;
+
+    if (else_body_tree == NULL){
+        if_node->right = if_body_tree;
+    }
+    else {
+        else_body_tree->left = if_body_tree;
+
+        if_node->right = else_body_tree;
+    }
 
     return if_node;
 }

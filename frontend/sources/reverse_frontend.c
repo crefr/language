@@ -13,6 +13,8 @@ static void printTabs(FILE * out_file, size_t tabs_num);
 
 static void printFuncArgs(FILE * out_file, tree_context_t * context, node_t * start_node);
 
+static void printBlock(FILE * out_file, tree_context_t * context, node_t * node);
+
 void printCodeFromTree(const char * out_file_name, tree_context_t * context, node_t * root)
 {
     assert(out_file_name);
@@ -27,12 +29,13 @@ void printCodeFromTree(const char * out_file_name, tree_context_t * context, nod
     fclose(out_file);
 }
 
+// variable for tabs
+static size_t tab_num = 0;
+
 static void printCodeFromTreeRecursive(FILE * out_file, tree_context_t * context, node_t * node, bool need_tabs)
 {
     assert(out_file);
     assert(context);
-
-    static size_t tab_num = 0;
 
     if (node == NULL)
         return;
@@ -88,23 +91,34 @@ static void printCodeFromTreeRecursive(FILE * out_file, tree_context_t * context
 
             break;
 
-        case IF: case WHILE:
+        case IF: case WHILE: {
             fprintf(out_file, "%s (", opers[op_num].name);
             printCodeFromTreeRecursive(out_file, context, node->left, false);
             fprintf(out_file, ")\n");
 
-            printTabs(out_file, tab_num);
+            bool have_else = node->right->type == OPR && node->right->val.op == IF_ELSE;
+            node_t * if_body_node = NULL;
 
-            fprintf(out_file, "%s\n", opers[BEGIN].name);
-            tab_num++;
+            // if we are having else, IF body is on the left of IF_ELSE node
+            if (have_else)
+                if_body_node = node->right->left;
+            else
+                if_body_node = node->right;
 
-            printCodeFromTreeRecursive(out_file, context, node->right, true);
+            printBlock(out_file, context, if_body_node);
 
-            tab_num--;
-            printTabs(out_file, tab_num);
-            fprintf(out_file, "%s", opers[ENDING].name);
+            // printing ELSE if we have it
+            if (have_else){
+                fprintf(out_file, "\n");
+
+                printTabs(out_file, tab_num);
+                fprintf(out_file, "else\n");
+
+                printBlock(out_file, context, node->right->right);
+            }
 
             break;
+        }
 
         case CALL: {
             // getting function name (left node)
@@ -132,14 +146,7 @@ static void printCodeFromTreeRecursive(FILE * out_file, tree_context_t * context
 
             fprintf(out_file, ")\n");
 
-            fprintf(out_file, "%s\n", opers[BEGIN].name);
-            tab_num++;
-
-            // function body tree is on the left
-            printCodeFromTreeRecursive(out_file, context, node->right, true);
-
-            tab_num--;
-            fprintf(out_file, "%s", opers[ENDING].name);
+            printBlock(out_file, context, node->right);
 
             break;
         }
@@ -162,6 +169,29 @@ static void printCodeFromTreeRecursive(FILE * out_file, tree_context_t * context
             fprintf(stderr, "cannot generate it (%d)\n", node->val.op);
             break;
     }
+}
+
+static void printIf(FILE * out_file, tree_context_t * context, node_t * node)
+{
+    assert(out_file);
+    assert(context);
+}
+
+static void printBlock(FILE * out_file, tree_context_t * context, node_t * node)
+{
+    assert(out_file);
+    assert(context);
+
+    printTabs(out_file, tab_num);
+    fprintf(out_file, "%s\n", opers[BEGIN].name);
+    tab_num++;
+
+    // printing what inside of the block
+    printCodeFromTreeRecursive(out_file, context, node, true);
+
+    tab_num--;
+    printTabs(out_file, tab_num);
+    fprintf(out_file, "%s", opers[ENDING].name);
 }
 
 static void printFuncArgs(FILE * out_file, tree_context_t * context, node_t * start_node)

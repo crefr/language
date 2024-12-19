@@ -1,18 +1,18 @@
-var a;
-a = 52;
+var x;
 
-out(a);
+x = 0;
 
-var ans;
-
-ans = foo(6);
-
-func foo(a)
+if (x)
 begin
-    a = 5;
-    out(a);
+    x = 0;
+end
 
-    return 0;
+else
+begin
+    if (x)
+    begin
+        x = 1;
+    end;
 end;
 
-out(a);
+out(x);

@@ -32,6 +32,8 @@ enum oper{
     RBRACKET,
 
     IF,
+    IF_ELSE,
+
     WHILE,
 
     VAR_DECL,
@@ -80,7 +82,9 @@ const oper_t opers[] = {
     {.name = "("  , .num = LBRACKET, .binary = false, .commutative = false, .asm_str = NULL},
     {.name = ")"  , .num = RBRACKET, .binary = false, .commutative = false, .asm_str = NULL},
 
-    {.name = "if"   , .num = IF,    .binary = true, .commutative = false, .asm_str = NULL},
+    {.name = "if"   , .num = IF,     .binary = true, .commutative = false, .asm_str = NULL},
+    {.name = "else" , .num = IF_ELSE,.binary = true, .commutative = false, .asm_str = NULL},
+
     {.name = "while", .num = WHILE, .binary = true, .commutative = false, .asm_str = NULL},
 
     {.name = "var", .num = VAR_DECL, .binary = false, .commutative = false, .asm_str = NULL},
