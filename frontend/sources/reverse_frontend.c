@@ -49,8 +49,6 @@ static void printCodeFromTreeRecursive(FILE * out_file, tree_context_t * context
 
     // if (...type == OPR)
 
-    printf("tabs: %d\n", tab_num);
-
     if (need_tabs)
         printTabs(out_file, tab_num);
 
@@ -73,7 +71,7 @@ static void printCodeFromTreeRecursive(FILE * out_file, tree_context_t * context
 
         case ASSIGN:
             printCodeFromTreeRecursive(out_file, context, node->left, false);
-            fprintf(out_file, "%s", opers[op_num].name);
+            fprintf(out_file, " %s ", opers[op_num].name);
             printCodeFromTreeRecursive(out_file, context, node->right, false);
 
             break;
@@ -83,7 +81,7 @@ static void printCodeFromTreeRecursive(FILE * out_file, tree_context_t * context
             fprintf(out_file, "(");
             printCodeFromTreeRecursive(out_file, context, node->left, false);
 
-            fprintf(out_file, "%s", opers[op_num].name);
+            fprintf(out_file, " %s ", opers[op_num].name);
 
             printCodeFromTreeRecursive(out_file, context, node->right, false);
             fprintf(out_file, ")");

@@ -22,6 +22,10 @@ static void translateWhile(be_context_t * be, node_t * cur_node);
 
 static void translateIf(be_context_t * be, node_t * cur_node);
 
+static void asmPrintVAR(be_context_t * be, size_t var_index);
+
+static void idrStackPush(idr_stack_t * stack, int64_t name_index, size_t address);
+
 be_context_t backendInit(size_t nodes_num, const char * asm_file_name, const char * tree_file_name)
 {
     assert(asm_file_name);
@@ -46,7 +50,22 @@ be_context_t backendInit(size_t nodes_num, const char * asm_file_name, const cha
 
     context.root = context.nodes;
 
+    context.idr_stack = (idr_stack_t *)calloc(1, sizeof(* context.idr_stack));
+
+    context.idr_stack->size = 0;
+    context.idr_stack->capacity = MAX_IDR_NUM; // TODO: make capacity variable
+
     return context;
+}
+
+static void idrStackPush(idr_stack_t * stack, int64_t name_index, size_t address)
+{
+    assert(stack);
+
+    stack->elems[stack->size].name_index = name_index;
+    stack->elems[stack->size].address = address;
+
+    stack->size++;
 }
 
 static void readTreeForBackend(be_context_t * be, const char * tree_file_name)
@@ -76,6 +95,8 @@ void backendDtor(be_context_t * context)
     context->cur_node = NULL;
 
     fclose(context->asm_file);
+
+    free(context->idr_stack);
 }
 
 /*---------------------------TRANSLATING TO ASM---------------------------*/
@@ -101,12 +122,35 @@ static void asmPrintVAR(be_context_t * be, size_t var_index)
 {
     assert(be);
 
-    if (! be->ids[var_index].is_local) {
-        asmPrintf(" [%u]     ; %s\n", be->ids[var_index].address, be->ids[var_index].name);
-        return;
+    size_t search_index = be->idr_stack->size;
+
+    int64_t cur_name_index = 0;
+
+    // if we are in function we will search it in our function scope firstly
+    if (be->in_function){
+        while ((cur_name_index = be->idr_stack->elems[search_index].name_index) != START_OF_FUNC_SCOPE){
+            if (cur_name_index == var_index){
+                size_t address = be->idr_stack->elems[search_index].address;
+                asmPrintf(" [RBX %zu] ; %s (local)\n", address, be->ids[var_index].name);
+
+                return;
+            }
+            search_index--;
+        }
     }
 
-    asmPrintf(" [RBX %zu] ; %s (local)\n", be->ids[var_index].address, be->ids[var_index].name);
+    // now in global scope
+    while (search_index > 0){
+        search_index--;
+
+        cur_name_index = be->idr_stack->elems[search_index].name_index;
+        if (cur_name_index == var_index){
+            asmPrintf(" [%u]     ; %s\n", be->ids[var_index].address, be->ids[var_index].name);
+            return;
+        }
+    }
+
+    fprintf(stderr, "ERROR: variable '%s' is not declared in this scope\n", be->ids[var_index].name);
 }
 
 static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
@@ -234,15 +278,17 @@ static void translateVarDecl(be_context_t * be, node_t * cur_node)
     size_t id_index = var_node->val.id;
 
     if (be->in_function){
-        be->ids[id_index].is_local = true;
-        be->ids[id_index].address = be->local_var_counter;
+        // be->ids[id_index].is_local = true;
+        // be->ids[id_index].address = be->local_var_counter;
 
+        idrStackPush(be->idr_stack,  id_index, be->local_var_counter);
         be->local_var_counter++;
     }
     else {
-        be->ids[id_index].is_local = false;
-        be->ids[id_index].address = be->global_var_counter;
+        // be->ids[id_index].is_local = false;
+        // be->ids[id_index].address = be->global_var_counter;
 
+        idrStackPush(be->idr_stack,  id_index, be->global_var_counter);
         be->global_var_counter++;
     }
 }

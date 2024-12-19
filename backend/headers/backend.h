@@ -1,9 +1,29 @@
 #ifndef BACKEND_INCLUDED
 #define BACKEND_INCLUDED
 
+#include <stdint.h>
+
 #include "tree.h"
 
 const size_t MAX_IDR_NUM = 64;
+
+// these constants MUST be negative, so they will not collide with real name_index
+enum scope_start {
+    START_OF_FUNC_SCOPE = -1,
+    START_OF_SCOPE = -2
+};
+
+typedef struct {
+    int64_t name_index; // index in the nametable or a number from enum scope_start
+    size_t  address;
+} idr_stack_elem_t;
+
+// TODO: make it reallocating
+typedef struct {
+    idr_stack_elem_t elems[MAX_IDR_NUM];
+    size_t size;
+    size_t capacity;
+} idr_stack_t;
 
 typedef struct {
     FILE * asm_file;
@@ -24,6 +44,8 @@ typedef struct {
     size_t  local_var_counter;
 
     bool in_function;
+
+    idr_stack_t * idr_stack;
 } be_context_t;
 
 /// @brief initialise context structure and read the tree for further actions
