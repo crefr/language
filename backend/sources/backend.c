@@ -26,6 +26,10 @@ static void asmPrintVAR(be_context_t * be, size_t var_index);
 
 static void idrStackPush(idr_stack_t * stack, int64_t name_index, size_t address);
 
+static void enterNewScope(be_context_t * be, enum scope_start scope);
+
+static void quitScope(be_context_t * be, enum scope_start scope);
+
 be_context_t backendInit(size_t nodes_num, const char * asm_file_name, const char * tree_file_name)
 {
     assert(asm_file_name);
@@ -145,12 +149,29 @@ static void asmPrintVAR(be_context_t * be, size_t var_index)
 
         cur_name_index = be->idr_stack->elems[search_index].name_index;
         if (cur_name_index == var_index){
-            asmPrintf(" [%u]     ; %s\n", be->ids[var_index].address, be->ids[var_index].name);
+            asmPrintf(" [%u]     ; %s\n", be->idr_stack->elems[search_index].address, be->ids[var_index].name);
             return;
         }
     }
 
     fprintf(stderr, "ERROR: variable '%s' is not declared in this scope\n", be->ids[var_index].name);
+}
+
+static void enterNewScope(be_context_t * be, enum scope_start scope)
+{
+    idrStackPush(be->idr_stack, scope, 0);
+}
+
+static void quitScope(be_context_t * be, enum scope_start scope)
+{
+    // finding START_OF_SCOPE
+    size_t search_index = be->idr_stack->size;
+
+    while (be->idr_stack->elems[search_index].name_index != scope)
+        search_index--;
+
+    // deleting the rest
+    be->idr_stack->size = search_index;
 }
 
 static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
@@ -240,8 +261,22 @@ static void makeAssemblyCodeRecursive(be_context_t * be, node_t * cur_node)
     }
 }
 
+static void addNewVar(be_context_t * be, size_t var_index)
+{
+    if (be->in_function){
+        idrStackPush(be->idr_stack,  var_index, be->local_var_counter);
+        be->local_var_counter++;
+    }
+    else {
+        idrStackPush(be->idr_stack,  var_index, be->global_var_counter);
+        be->global_var_counter++;
+    }
+}
+
 static void translateIf(be_context_t * be, node_t * cur_node)
 {
+    enterNewScope(be, START_OF_SCOPE);
+
     size_t if_index = be->if_counter;
     be->if_counter++;
 
@@ -252,13 +287,15 @@ static void translateIf(be_context_t * be, node_t * cur_node)
     makeAssemblyCodeRecursive(be, cur_node->right);
     asmPrintf("IF_END_%zu:\n", if_index);
 
-    be->if_counter++;
+    quitScope(be, START_OF_SCOPE);
 }
 
 static void translateWhile(be_context_t * be, node_t * cur_node)
 {
     size_t while_index = be->while_counter;
     be->while_counter++;
+
+    enterNewScope(be, START_OF_SCOPE);
 
     asmPrintf("WHILE_BEGIN_%zu:\n", while_index);
 
@@ -270,6 +307,8 @@ static void translateWhile(be_context_t * be, node_t * cur_node)
 
     asmPrintf("JMP WHILE_BEGIN_%zu:\n", while_index);
     asmPrintf("WHILE_END_%zu:\n", while_index);
+
+    quitScope(be, START_OF_SCOPE);
 }
 
 static void translateVarDecl(be_context_t * be, node_t * cur_node)
@@ -277,26 +316,15 @@ static void translateVarDecl(be_context_t * be, node_t * cur_node)
     node_t * var_node = cur_node->left;
     size_t id_index = var_node->val.id;
 
-    if (be->in_function){
-        // be->ids[id_index].is_local = true;
-        // be->ids[id_index].address = be->local_var_counter;
-
-        idrStackPush(be->idr_stack,  id_index, be->local_var_counter);
-        be->local_var_counter++;
-    }
-    else {
-        // be->ids[id_index].is_local = false;
-        // be->ids[id_index].address = be->global_var_counter;
-
-        idrStackPush(be->idr_stack,  id_index, be->global_var_counter);
-        be->global_var_counter++;
-    }
+    addNewVar(be, id_index);
 }
 
 static void translateFuncDecl(be_context_t * be, node_t * cur_node)
 {
     be->local_var_counter = 0;
+
     be->in_function = true;
+    enterNewScope(be, START_OF_FUNC_SCOPE);
 
     // making arguments local and giving them addresses
     node_t * cur_arg_node = cur_node->left->right;
@@ -307,15 +335,10 @@ static void translateFuncDecl(be_context_t * be, node_t * cur_node)
     while (cur_arg_node != NULL){
         size_t cur_id = cur_arg_node->left->val.id;
 
-        be->ids[cur_id].is_local = true;
-        be->ids[cur_id].address  = arg_index;
+        addNewVar(be, cur_id);
 
-        arg_index++;
         cur_arg_node = cur_arg_node->right;
     }
-
-    // args are local vars too
-    be->local_var_counter += arg_index;
 
     // taking func_name from left node of FUNC_HEADER node
     const char * func_name = be->ids[cur_node->left->left->val.id].name;
@@ -331,6 +354,7 @@ static void translateFuncDecl(be_context_t * be, node_t * cur_node)
     asmPrintf("END_OF_FUNC_%s:\n", func_name);
 
     be->in_function = false;
+    quitScope(be, START_OF_FUNC_SCOPE);
 }
 
 static void translateCall(be_context_t * be, node_t * cur_node)

@@ -1,61 +1,54 @@
 TXT:1
 nametable {
-	0000: "x", VAR;
-	0001: "factorial", FUNC;
-	0002: "number", VAR;
-	0003: "answer", VAR;
+	0000: "a", VAR;
+	0001: "ans", VAR;
+	0002: "foo", FUNC;
 }
 {OPR:26
 {OPR:17
 {IDR:0}{}}
 {OPR:26
-{OPR:11
-{IDR:0}{}}
+{OPR:25
+{IDR:0}{NUM:52}}
 {OPR:26
 {OPR:12
-{OPR:18
-{IDR:1}{OPR:21
 {IDR:0}{}}
+{OPR:26
+{OPR:17
+{IDR:1}{}}
+{OPR:26
+{OPR:25
+{IDR:1}{OPR:18
+{IDR:2}{OPR:21
+{NUM:6}{}}
 }
-{}}
+}
 {OPR:26
 {OPR:19
 {OPR:20
-{IDR:1}{OPR:21
-{IDR:2}{}}
+{IDR:2}{OPR:21
+{IDR:0}{}}
 }
-{OPR:26
-{OPR:15
-{OPR:1
-{IDR:2}{NUM:1}}
-{OPR:26
-{OPR:17
-{IDR:3}{}}
 {OPR:26
 {OPR:25
-{IDR:3}{OPR:2
-{OPR:18
-{IDR:1}{OPR:21
-{OPR:1
-{IDR:2}{NUM:1}}
-{}}
-}
-{IDR:2}}
-}
+{IDR:0}{NUM:5}}
+{OPR:26
+{OPR:12
+{IDR:0}{}}
 {OPR:26
 {OPR:22
-{IDR:3}{}}
+{NUM:0}{}}
 {}}
 }
 }
 }
 {OPR:26
-{OPR:22
-{NUM:1}{}}
+{OPR:12
+{IDR:0}{}}
 {}}
 }
 }
-{}}
+}
 }
 }
 }

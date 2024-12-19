@@ -1,17 +1,18 @@
-var x;
-in(x);
+var a;
+a = 52;
 
-out(factorial(x));
+out(a);
 
-func factorial(number)
+var ans;
+
+ans = foo(6);
+
+func foo(a)
 begin
-    if (number-1)
-    begin
-        var answer;
-        answer = factorial(number - 1) * number;
+    a = 5;
+    out(a);
 
-        return answer;
-    end;
-
-    return 1;
+    return 0;
 end;
+
+out(a);
