@@ -23,7 +23,7 @@
 <MulDiv>  ::= <Power> (("*" | "/") <Power>)*
 
 <Power>   ::= <Primary> ("^" <Power>)?
-<Primary> ::= "(" <Expr> ")" | <MathFunc> | <Func> | <Var> | <Number>
+<Primary> ::= "(" <Expr> ")" | <MathFunc> | <FuncCall> | <Var> | <Number>
 
 <FuncCall>::= <ID> "(" <Expr> ("," <Expr>)* ")"
 <Var>	  ::= <ID>

@@ -96,7 +96,7 @@ static node_t * getBlock(fe_context_t * frontend)
 {
     assert(frontend);
 
-LOG_SYNTAX_FUNC_INFO;
+    LOG_SYNTAX_FUNC_INFO;
 
     if (! tokenisOPR(BEGIN)){
         frontend->status = SOFT_ERROR;
@@ -125,7 +125,7 @@ static node_t * getChain(fe_context_t * frontend)
 {
     assert(frontend);
 
-LOG_SYNTAX_FUNC_INFO;
+    LOG_SYNTAX_FUNC_INFO;
 
     node_t * cur = getStatement(frontend);
 
@@ -165,7 +165,7 @@ static node_t * getStatement(fe_context_t * frontend)
 {
     assert(frontend);
 
-LOG_SYNTAX_FUNC_INFO;
+    LOG_SYNTAX_FUNC_INFO;
 
     const syntax_func_t statement_funcs[] = {
         getSTDfunc,
@@ -195,7 +195,7 @@ static node_t * getWhile(fe_context_t * frontend)
 {
     assert(frontend);
 
-LOG_SYNTAX_FUNC_INFO;
+    LOG_SYNTAX_FUNC_INFO;
 
     frontend->status = SUCCESS;
 
@@ -235,7 +235,7 @@ static node_t * getFuncDecl(fe_context_t * frontend)
 {
     assert(frontend);
 
-LOG_SYNTAX_FUNC_INFO;
+    LOG_SYNTAX_FUNC_INFO;
 
     frontend->status = SUCCESS;
 
@@ -336,7 +336,7 @@ static node_t * getIF(fe_context_t * frontend)
 {
     assert(frontend);
 
-LOG_SYNTAX_FUNC_INFO;
+    LOG_SYNTAX_FUNC_INFO;
 
     frontend->status = SUCCESS;
 
@@ -377,7 +377,7 @@ static node_t * getSTDfunc(fe_context_t * frontend)
 {
     assert(frontend);
 
-LOG_SYNTAX_FUNC_INFO;
+    LOG_SYNTAX_FUNC_INFO;
 
     node_t * func = getInput(frontend);
 
@@ -400,7 +400,7 @@ static node_t * getInput(fe_context_t * frontend)
 {
     assert(frontend);
 
-LOG_SYNTAX_FUNC_INFO;
+    LOG_SYNTAX_FUNC_INFO;
 
     frontend->status = SUCCESS;
 
@@ -430,7 +430,7 @@ static node_t * getOutput(fe_context_t * frontend)
 {
     assert(frontend);
 
-LOG_SYNTAX_FUNC_INFO;
+    LOG_SYNTAX_FUNC_INFO;
 
     frontend->status = SUCCESS;
 
@@ -462,7 +462,7 @@ static node_t * getReturn(fe_context_t * frontend)
 
     frontend->status = SUCCESS;
 
-LOG_SYNTAX_FUNC_INFO;
+    LOG_SYNTAX_FUNC_INFO;
 
     node_t * ret_node = token;
     if (! tokenisOPR(RETURN)){
@@ -486,7 +486,7 @@ static node_t * getAssign(fe_context_t * frontend)
 {
     assert(frontend);
 
-LOG_SYNTAX_FUNC_INFO;
+    LOG_SYNTAX_FUNC_INFO;
 
     node_t * left_part = getId(frontend);
     if (frontend->status != SUCCESS){
@@ -515,7 +515,7 @@ static node_t * getExpr(fe_context_t * frontend)
 {
     assert(frontend);
 
-LOG_SYNTAX_FUNC_INFO;
+    LOG_SYNTAX_FUNC_INFO;
 
     node_t * node = getMulDiv(frontend);
 
@@ -546,7 +546,7 @@ static node_t * getMulDiv(fe_context_t * frontend)
 {
     assert(frontend);
 
-LOG_SYNTAX_FUNC_INFO;
+    LOG_SYNTAX_FUNC_INFO;
 
     node_t * node = getPower(frontend);
 
@@ -575,7 +575,7 @@ static node_t * getPower(fe_context_t * frontend)
 {
     assert(frontend);
 
-LOG_SYNTAX_FUNC_INFO;
+    LOG_SYNTAX_FUNC_INFO;
 
     node_t * node = getPrimary(frontend);
 
@@ -604,7 +604,7 @@ static node_t * getPrimary(fe_context_t * frontend)
 {
     assert(frontend);
 
-LOG_SYNTAX_FUNC_INFO;
+    LOG_SYNTAX_FUNC_INFO;
 
     if (token->type == OPR && token->val.op == LBRACKET){
         token++;
@@ -653,7 +653,7 @@ static node_t * getVarDecl(fe_context_t * frontend)
 
     frontend->status = SUCCESS;
 
-LOG_SYNTAX_FUNC_INFO;
+    LOG_SYNTAX_FUNC_INFO;
 
     if (! tokenisOPR(VAR_DECL)){
         frontend->status = SOFT_ERROR;
@@ -681,7 +681,7 @@ static node_t * getFuncCall(fe_context_t * frontend)
 
     frontend->status = SUCCESS;
 
-LOG_SYNTAX_FUNC_INFO;
+    LOG_SYNTAX_FUNC_INFO;
 
     if (token->type != IDR){
         frontend->status = SOFT_ERROR;
@@ -766,7 +766,7 @@ static node_t * getNumber(fe_context_t * frontend)
 {
     assert(frontend);
 
-LOG_SYNTAX_FUNC_INFO;
+    LOG_SYNTAX_FUNC_INFO;
 
     if (token->type == NUM){
         frontend->status = SUCCESS;
@@ -785,7 +785,7 @@ static node_t * getId(fe_context_t * frontend)
 {
     assert(frontend);
 
-LOG_SYNTAX_FUNC_INFO;
+    LOG_SYNTAX_FUNC_INFO;
 
     if (token->type != IDR){
         frontend->status  = SOFT_ERROR;
@@ -804,7 +804,7 @@ static node_t * getMathFunc(fe_context_t * frontend)
 {
     assert(frontend);
 
-LOG_SYNTAX_FUNC_INFO;
+    LOG_SYNTAX_FUNC_INFO;
 
     if (token->type != OPR){
         frontend->status = SOFT_ERROR;
