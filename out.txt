@@ -16,12 +16,8 @@ nametable {
 {IDR:0}{NUM:0}}
 {}}
 {OPR:27
-{OPR:15
-{IDR:0}{OPR:27
 {OPR:26
 {IDR:0}{NUM:1}}
-{}}
-}
 {}}
 }
 }

@@ -9,10 +9,7 @@ end
 
 else
 begin
-    if (x)
-    begin
-        x = 1;
-    end;
+    x = 1;
 end;
 
 out(x);

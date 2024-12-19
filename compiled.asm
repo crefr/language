@@ -3,8 +3,14 @@ PUSH 0
 POP  [0]     ; x
 PUSH [0]     ; x
 PUSH 0
-JE IF_END_0:
-IF_END_0:
+JE ELSE_0:
+PUSH 0
+POP  [0]     ; x
+JMP ELSE_END_0:
+ELSE_0:
+PUSH 1
+POP  [0]     ; x
+ELSE_END_0:
 PUSH [0]     ; x
 OUT
 HLT

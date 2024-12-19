@@ -275,6 +275,26 @@ static void addNewVar(be_context_t * be, size_t var_index)
 
 static void translateIf(be_context_t * be, node_t * cur_node)
 {
+    bool have_else = cur_node->right->type == OPR && cur_node->right->val.op == IF_ELSE;
+
+    if (! have_else) {
+        enterNewScope(be, START_OF_SCOPE);
+
+        size_t if_index = be->if_counter;
+        be->if_counter++;
+
+        translateExpression(be, cur_node->left);
+
+        asmPrintf("PUSH 0\n");
+        asmPrintf("JE IF_END_%zu:\n", if_index);
+        makeAssemblyCodeRecursive(be, cur_node->right);
+        asmPrintf("IF_END_%zu:\n", if_index);
+
+        quitScope(be, START_OF_SCOPE);
+
+        return;
+    }
+
     enterNewScope(be, START_OF_SCOPE);
 
     size_t if_index = be->if_counter;
@@ -282,10 +302,21 @@ static void translateIf(be_context_t * be, node_t * cur_node)
 
     translateExpression(be, cur_node->left);
 
+    node_t * if_else_node = cur_node->right;
+
     asmPrintf("PUSH 0\n");
-    asmPrintf("JE IF_END_%zu:\n", if_index);
-    makeAssemblyCodeRecursive(be, cur_node->right);
-    asmPrintf("IF_END_%zu:\n", if_index);
+    asmPrintf("JE ELSE_%zu:\n", if_index);
+
+    // if-body
+    makeAssemblyCodeRecursive(be, if_else_node->left);
+
+    asmPrintf("JMP ELSE_END_%zu:\n", if_index);
+    asmPrintf("ELSE_%zu:\n", if_index);
+
+    // else-body
+    makeAssemblyCodeRecursive(be, if_else_node->right);
+
+    asmPrintf("ELSE_END_%zu:\n", if_index);
 
     quitScope(be, START_OF_SCOPE);
 }
@@ -394,13 +425,15 @@ static void translateCall(be_context_t * be, node_t * cur_node)
     asmPrintf("; pushing old base pointer (RBX)\n");
     asmPrintf("PUSH RBX\n");
 
+    // pushing new RBX value in stack
     asmPrintf("; shifting base pointer (RBX)\n");
     if (be->in_function)
         asmPrintf("PUSH RBX %zu\n", be->local_var_counter);
     else
         asmPrintf("PUSH %zu\n", be->global_var_counter);
-    asmPrintf("POP  RBX\n");
 
+    // poping to RBX
+    asmPrintf("POP  RBX\n");
     asmPrintf("; ended shifting base pointer (RBX)\n");
 
     asmPrintf("CALL %s:\n", func_name);
@@ -408,6 +441,7 @@ static void translateCall(be_context_t * be, node_t * cur_node)
     // returning old base pointer
     asmPrintf("POP  RBX\n");
 
+    // push returned value in stack
     asmPrintf("PUSH RAX\n");
 
     asmPrintf("; call ended\n");
