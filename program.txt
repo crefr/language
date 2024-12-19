@@ -1,7 +1,17 @@
 var x;
 in(x);
 
-if (x >= 5)
+out(factorial(x));
+
+func factorial(number)
 begin
-    out(52);
+    if (number-1)
+    begin
+        var answer;
+        answer = factorial(number - 1) * number;
+
+        return answer;
+    end;
+
+    return 1;
 end;

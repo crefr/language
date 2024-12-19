@@ -13,12 +13,13 @@ enum elem_type{
 const size_t MAX_ELEM_TYPE_NAME_LEN = 10;
 
 enum oper{
-    ADD = 0,
-    SUB,
-    MUL,
-    DIV,
-    POW,
-    SIN,
+    ADD     = 0,
+    SUB     = 1,
+    MUL     = 2,
+    DIV     = 3,
+    POW     = 4, // TODO: you get it
+    SQRT    = 5,
+    SIN     = 6,
     COS,
     TAN,
     LN,
@@ -62,6 +63,7 @@ enum oper{
 
 typedef struct {
     enum oper num;
+
     const char * name;
     const char * dot_name;
 
@@ -72,17 +74,18 @@ typedef struct {
 } oper_t;
 
 const oper_t opers[] = {
-    {.num = ADD, .name = "+"  , .dot_name = "+",   .binary = true,  .commutative = true , .asm_str = "ADD"},
-    {.num = SUB, .name = "-"  , .dot_name = "-",   .binary = true,  .commutative = false, .asm_str = "SUB"},
-    {.num = MUL, .name = "*"  , .dot_name = "*",   .binary = true,  .commutative = true , .asm_str = "MUL"},
-    {.num = POW, .name = "^"  , .dot_name = "^",   .binary = true,  .commutative = false, .asm_str = "POW"},
-    {.num = DIV, .name = "/"  , .dot_name = "/",   .binary = true,  .commutative = false, .asm_str = "DIV"},
-    {.num = SIN, .name = "sin", .dot_name = "sin", .binary = false, .commutative = false, .asm_str = "SIN"},
-    {.num = COS, .name = "cos", .dot_name = "cos", .binary = false, .commutative = false, .asm_str = "COS"},
-    {.num = TAN, .name = "tan", .dot_name = "tan", .binary = false, .commutative = false, .asm_str = "TAN"},
-    {.num = LN , .name = "ln" , .dot_name = "ln",  .binary = false, .commutative = false, .asm_str = "LN" },
-    {.num = LOG, .name = "log", .dot_name = "log", .binary = true,  .commutative = false, .asm_str = NULL},
-    {.num = FAC, .name = "!"  , .dot_name = "!",   .binary = false, .commutative = false, .asm_str = NULL},
+    {.num = ADD, .name = "+"   , .dot_name = "+",   .binary = true,  .commutative = true , .asm_str = "ADD"},
+    {.num = SUB, .name = "-"   , .dot_name = "-",   .binary = true,  .commutative = false, .asm_str = "SUB"},
+    {.num = MUL, .name = "*"   , .dot_name = "*",   .binary = true,  .commutative = true , .asm_str = "MUL"},
+    {.num = POW, .name = "^"   , .dot_name = "^",   .binary = true,  .commutative = false, .asm_str = "POW"},
+    {.num = SQRT,.name = "sqrt", .dot_name = "^",   .binary = true,  .commutative = false, .asm_str = "SQRT"},
+    {.num = DIV, .name = "/"   , .dot_name = "/",   .binary = true,  .commutative = false, .asm_str = "DIV"},
+    {.num = SIN, .name = "sin" , .dot_name = "sin", .binary = false, .commutative = false, .asm_str = "SIN"},
+    {.num = COS, .name = "cos" , .dot_name = "cos", .binary = false, .commutative = false, .asm_str = "COS"},
+    {.num = TAN, .name = "tan" , .dot_name = "tan", .binary = false, .commutative = false, .asm_str = "TAN"},
+    {.num = LN , .name = "ln"  , .dot_name = "ln",  .binary = false, .commutative = false, .asm_str = "LN" },
+    {.num = LOG, .name = "log" , .dot_name = "log", .binary = true,  .commutative = false, .asm_str = NULL},
+    {.num = FAC, .name = "!"   , .dot_name = "!",   .binary = false, .commutative = false, .asm_str = NULL},
 
     {.num = GREATER,    .name = ">"  , .dot_name = "GREATER",    .binary = true, .commutative = false, .asm_str = "CALL __GREATER_OP__:"},
     {.num = LESS   ,    .name = "<"  , .dot_name = "LESS",       .binary = true, .commutative = false, .asm_str = "CALL __LESS_OP__:"},

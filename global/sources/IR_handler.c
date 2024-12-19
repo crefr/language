@@ -10,7 +10,7 @@
 #include "IR_handler.h"
 #include "logger.h"
 
-const char * const SIGN_STRING  = "TXT:1";
+const char * const SIGN_STRING  = "IR312:1";
 const size_t SIGN_MAX_LEN = 32;
 const size_t BUFFER_LEN   = 32;
 
@@ -117,15 +117,10 @@ static int readNameTable(tree_context_t * tree, const char ** cur_pos)
     assert(*cur_pos);
 
     int shift = 0;
-    char buffer[BUFFER_LEN] = "";
 
-    sscanf(*cur_pos, " %[^{ ] {%n", buffer, &shift);
+    size_t nametable_size = 0;
+    sscanf(*cur_pos, " NAMETABLE size: %zu {%n", &nametable_size, &shift); // TODO: reallocating name table
     *cur_pos += shift;
-
-    logPrint(LOG_DEBUG, "read nametable name: '%s'\n", buffer);
-
-    if (strcmp(buffer, "nametable") != 0)
-        return 0;
 
     shift = 0;
 
@@ -134,7 +129,8 @@ static int readNameTable(tree_context_t * tree, const char ** cur_pos)
         char type_buf[BUFFER_LEN] = "";
         size_t index = 0;
 
-        sscanf(*cur_pos, " %zu : \"%[^\"]\", %[^ ;] ;%n", &index, name_buf, type_buf, &shift);
+        size_t func_arg_num = 0;
+        sscanf(*cur_pos, " %zu : \"%[^\"]\" , %[^ ,;] , %zu ;%n", &index, name_buf, type_buf, &func_arg_num, &shift); // TODO: func arg_counter
         *cur_pos += shift;
 
         logPrint(LOG_DEBUG, "scanned name: %04zu, \"%s\", %s;\n", index, name_buf, type_buf);
@@ -220,10 +216,22 @@ static node_t * readTreeFromIRrecursive(tree_context_t * tree, const char ** cur
     }
 
     // if (strmcp(type_str, "OPR") == 0)
-    enum oper op_num = NO_OP;
+    char op_buffer[MAX_IR_OPER_NAME_LEN] = "";
 
-    sscanf(*cur_pos, " %d %n", &op_num, &shift);
+    sscanf(*cur_pos, " %[^\n {] %n", op_buffer, &shift);
     *cur_pos += shift;
+
+    enum oper op_num = NO_OP;
+    // searching op_num by the name
+    // TODO: may be hashtable?
+
+    for (size_t oper_index = 0; oper_index < oper_names_num; oper_index++){
+        if (strcmp(op_buffer, oper_names[oper_index].name) == 0){
+            op_num = oper_names[oper_index].op_num;
+            break;
+        }
+    }
+    assert(op_num != NO_OP);
 
     node_t * opr_node = tree->cur_node;
     tree->cur_node++;
@@ -261,11 +269,11 @@ static void writeNameTable(tree_context_t * tree, FILE * out_file)
     assert(tree);
     assert(out_file);
 
-    fprintf(out_file, "nametable {\n");
+    fprintf(out_file, "NAMETABLE size: %zu {\n", tree->id_size);
 
     for (size_t id_index = 0; id_index < tree->id_size; id_index++){
         const char * type_str = (tree->ids[id_index].type == VAR) ? "VAR" : "FUNC";
-        fprintf(out_file, "\t%04zu: \"%s\", %s;\n", id_index, tree->ids[id_index].name, type_str);
+        fprintf(out_file, "\t%04zu: \"%s\", %s, %zu;\n", id_index, tree->ids[id_index].name, type_str, 0); // TODO: make func arg counter
     }
 
     fprintf(out_file, "}\n");
@@ -293,7 +301,17 @@ static void writeTreeToFileRecursive(tree_context_t * tree, node_t * node, FILE 
 
     oper_t oper = opers[node->val.op];
 
-    fprintf(out_file, "{OPR:%d\n", node->val.op);
+    // searching name for this operator
+    const char * op_name = NULL;
+    for (size_t oper_index = 0; oper_index < oper_names_num; oper_index++){
+        if (oper_names[oper_index].op_num == oper.num){
+            op_name = oper_names[oper_index].name;
+            break;
+        }
+    }
+    assert(op_name);
+
+    fprintf(out_file, "{OPR:%s\n", op_name);
 
     writeTreeToFileRecursive(tree, node->left , out_file, tab_num + 1);
     writeTreeToFileRecursive(tree, node->right, out_file, tab_num + 1);

@@ -80,6 +80,7 @@ static void printCodeFromTreeRecursive(FILE * out_file, tree_context_t * context
             break;
 
         case ADD: case SUB: case MUL: case DIV:
+        case LESS: case LESS_EQ: case EQUAL: case N_EQUAL: case GREATER: case GREATER_EQ:
             // TODO: decrease number of brackets
             fprintf(out_file, "(");
             printCodeFromTreeRecursive(out_file, context, node->left, false);
@@ -194,28 +195,28 @@ static void printBlock(FILE * out_file, tree_context_t * context, node_t * node)
     fprintf(out_file, "%s", opers[ENDING].name);
 }
 
-static void printFuncArgs(FILE * out_file, tree_context_t * context, node_t * start_node)
+static void printFuncArgs(FILE * out_file, tree_context_t * context, node_t * node)
 {
     assert(out_file);
     assert(context);
 
-    if (start_node == NULL)
+    if (node == NULL)
         return;
 
-    node_t * arg_node = start_node;
+    node_t * arg_node = node;
 
-    // the first arg is unique because id do not have comma before it
-    printCodeFromTreeRecursive(out_file, context, arg_node->left, false);
+    if (node->type == OPR && node->val.op == ARG_SEP){
+        printFuncArgs(out_file, context, node->left);
 
-    arg_node = arg_node->right;
-
-    // other args if presented
-    while (arg_node != NULL){
         fprintf(out_file, ", ");
-        printCodeFromTreeRecursive(out_file, context, arg_node->left, false);
 
-        arg_node = arg_node->right;
+        printFuncArgs(out_file, context, node->right);
+
+        return;
     }
+
+    // else
+    printCodeFromTreeRecursive(out_file, context, node, false);
 }
 
 static void printTabs(FILE * out_file, size_t tabs_num)
