@@ -369,7 +369,10 @@ static void translateFuncDecl(be_context_t * be, node_t * cur_node)
     size_t arg_index = 0;
 
     while (cur_arg_node != NULL){
-        size_t cur_id = cur_arg_node->left->val.id;
+        // for compatibility with other formats, out format do not actually need it
+        node_t * id_node = (cur_arg_node->type == OPR && cur_arg_node->val.op == ARG_SEP) ? cur_arg_node->left : cur_arg_node;
+
+        size_t cur_id = id_node->val.id;
 
         addNewVar(be, cur_id);
 
@@ -407,7 +410,18 @@ static void translateCall(be_context_t * be, node_t * cur_node)
 
     asmPrintf("; giving args\n");
     while (cur_arg_node != NULL){
-        translateExpression(be, cur_arg_node->left);
+        node_t * expr_tree = NULL;
+
+        if (cur_arg_node->type == OPR && cur_arg_node->val.op == ARG_SEP){
+            expr_tree = cur_arg_node->left;
+            cur_arg_node = cur_arg_node->right;
+        }
+        else {
+            expr_tree = cur_arg_node;
+            cur_arg_node = NULL;
+        }
+
+        translateExpression(be, expr_tree);
 
         // we need to add ...var_counter because we have not yet shifted base pointer (RBX)
         if (be->in_function){
@@ -420,7 +434,6 @@ static void translateCall(be_context_t * be, node_t * cur_node)
         }
 
         arg_index++;
-        cur_arg_node = cur_arg_node->right;
     }
     asmPrintf("; ended giving args\n");
 
