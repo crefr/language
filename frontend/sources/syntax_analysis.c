@@ -32,6 +32,7 @@ static node_t * getOutput(fe_context_t * frontend);
 static node_t * getReturn(fe_context_t * frontend);
 
 static node_t * getExpr(fe_context_t * frontend);
+static node_t * getAddSub(fe_context_t * frontend);
 static node_t * getMulDiv(fe_context_t * frontend);
 static node_t * getPower(fe_context_t * frontend);
 static node_t * getPrimary(fe_context_t * frontend);
@@ -556,6 +557,37 @@ static node_t * getAssign(fe_context_t * frontend)
 }
 
 static node_t * getExpr(fe_context_t * frontend)
+{
+    assert(frontend);
+
+    LOG_SYNTAX_FUNC_INFO;
+
+    node_t * node = getAddSub(frontend);
+
+    if (frontend->status == HARD_ERROR)
+        return NULL;
+
+    while (tokenisOPR(GREATER) || tokenisOPR(LESS) || tokenisOPR(LESS_EQ) || tokenisOPR(GREATER_EQ) || tokenisOPR(EQUAL) || tokenisOPR(N_EQUAL)){
+        node_t * cur_node = token;
+        token++;
+
+        node_t * node2 = getAddSub(frontend);
+
+        if (frontend->status == HARD_ERROR)
+            return NULL;
+
+        cur_node->left  = node;
+        cur_node->right = node2;
+
+        node = cur_node;
+    }
+
+    frontend->status = SUCCESS;
+
+    return node;
+}
+
+static node_t * getAddSub(fe_context_t * frontend)
 {
     assert(frontend);
 

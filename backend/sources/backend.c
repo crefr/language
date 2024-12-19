@@ -30,6 +30,8 @@ static void enterNewScope(be_context_t * be, enum scope_start scope);
 
 static void quitScope(be_context_t * be, enum scope_start scope);
 
+static void makeSTDfuncs(be_context_t * be);
+
 be_context_t backendInit(size_t nodes_num, const char * asm_file_name, const char * tree_file_name)
 {
     assert(asm_file_name);
@@ -116,6 +118,9 @@ void makeAssemblyCode(be_context_t * be)
     makeAssemblyCodeRecursive(be, be->root);
 
     fprintf(be->asm_file, "HLT\n");
+
+    // makes some funcs that our code is using
+    makeSTDfuncs(be);
 
     logPrint(LOG_DEBUG, "successfully translated to asm!\n");
 }
@@ -466,7 +471,7 @@ static void translateExpression(be_context_t * be, node_t * cur_node)
     // if (...type == OPR)
 
     if (cur_node->val.op == CALL){
-        makeAssemblyCodeRecursive(be, cur_node);
+        translateCall(be, cur_node);
         return;
     }
 
@@ -479,6 +484,40 @@ static void translateExpression(be_context_t * be, node_t * cur_node)
         translateExpression(be, cur_node->left);
 
     asmPrintf("%s\n", opers[op_num].asm_str);
+}
+
+static void makeSTDfuncs(be_context_t * be)
+{
+    asmPrintf("\n\n;==========FUNCS FOR MACHINE ONLY USING==========\n");
+
+    struct jmp_func {
+        const char * func_name;
+        const char * jmp_name;
+    };
+
+    const struct jmp_func jmps[] = {
+        {"__GREATER_OP__"       , "JA"},
+        {"__LESS_OP__"          , "JB"},
+        {"__GREATER_EQ_OP__"    , "JAE"},
+        {"__LESS_EQ_OP__"       , "JBE"},
+        {"__EQUAL_OP__"         , "JE"},
+        {"__N_EQUAL_OP__"       , "JNE"}
+    };
+    const size_t func_num = sizeof(jmps) / sizeof(jmps[0]);
+
+    for (size_t func_index = 0; func_index < func_num; func_index++){
+        asmPrintf("%s:\n", jmps[func_index].func_name);
+        asmPrintf("%s __RETURN_TRUE__:\n", jmps[func_index].jmp_name);
+        asmPrintf("JMP __RETURN_FALSE__:\n\n");
+    }
+
+    // pushes 0 and returns
+    asmPrintf("__RETURN_FALSE__:\n");
+    asmPrintf("PUSH 0\nRET\n\n");
+
+    // pushes 1 and returns
+    asmPrintf("__RETURN_TRUE__:\n");
+    asmPrintf("PUSH 1\nRET\n\n");
 }
 
 #undef asmPrintf

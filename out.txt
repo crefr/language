@@ -2,30 +2,28 @@ TXT:1
 nametable {
 	0000: "x", VAR;
 }
-{OPR:27
+{OPR:33
+{OPR:24
+{IDR:0}{}}
+{OPR:33
+{OPR:17
+{IDR:0}{}}
+{OPR:33
+{OPR:21
+{OPR:13
+{IDR:0}{NUM:5}}
+{OPR:22
+{OPR:33
 {OPR:18
-{IDR:0}{}}
-{OPR:27
-{OPR:26
-{IDR:0}{NUM:0}}
-{OPR:27
-{OPR:15
-{IDR:0}{OPR:16
-{OPR:27
-{OPR:26
-{IDR:0}{NUM:0}}
+{NUM:52}{}}
 {}}
-{OPR:27
-{OPR:26
-{IDR:0}{NUM:1}}
+{OPR:33
+{OPR:18
+{NUM:0}{}}
 {}}
 }
 }
-{OPR:27
-{OPR:12
-{IDR:0}{}}
 {}}
-}
 }
 }
 

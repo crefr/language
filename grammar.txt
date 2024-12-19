@@ -21,8 +21,10 @@
 <Input>   ::= "in"  "(" <Var> ")"
 <Output>  ::= "out" "(" <Expr> ")"
 
-<Expr>    ::= <MulDiv>  (("+" | "-") <MulDiv>)*
-<MulDiv>  ::= <Power> (("*" | "/") <Power>)*
+<Expr>    ::= <AddSub> ((">" | "<") <AddSub>)*
+
+<AddSub>  ::= <MulDiv> (("+" | "-") <MulDiv>)*
+<MulDiv>  ::= <Power>  (("*" | "/") <Power>)*
 
 <Power>   ::= <Primary> ("^" <Power>)?
 <Primary> ::= "(" <Expr> ")" | <MathFunc> | <FuncCall> | <Var> | <Number>

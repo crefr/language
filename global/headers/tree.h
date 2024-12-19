@@ -25,6 +25,13 @@ enum oper{
     LOG,
     FAC,
 
+    GREATER,
+    LESS,
+    GREATER_EQ,
+    LESS_EQ,
+    EQUAL,
+    N_EQUAL,
+
     IN,
     OUT,
 
@@ -75,6 +82,13 @@ const oper_t opers[] = {
     {.name = "ln" , .num = LN , .binary = false, .commutative = false, .asm_str = "LN" },
     {.name = "log", .num = LOG, .binary = true,  .commutative = false, .asm_str = NULL},
     {.name = "!"  , .num = FAC, .binary = false, .commutative = false, .asm_str = NULL},
+
+    {.name = ">"  , .num = GREATER,         .binary = true, .commutative = false, .asm_str = "CALL __GREATER_OP__:"},
+    {.name = "<"  , .num = LESS   ,         .binary = true, .commutative = false, .asm_str = "CALL __LESS_OP__:"},
+    {.name = ">=" , .num = GREATER_EQ   ,   .binary = true, .commutative = false, .asm_str = "CALL __GREATER_EQ_OP__:"},
+    {.name = "<=" , .num = LESS_EQ   ,      .binary = true, .commutative = false, .asm_str = "CALL __LESS_EQ_OP__:"},
+    {.name = "==" , .num = EQUAL   ,        .binary = true, .commutative = false, .asm_str = "CALL __EQUAL_OP__:"},
+    {.name = "!=" , .num = N_EQUAL   ,      .binary = true, .commutative = false, .asm_str = "CALL __N_EQUAL_OP__:"},
 
     {.name = "in",  .num = IN , .binary = false, .commutative = false, .asm_str = NULL},
     {.name = "out", .num = OUT, .binary = false, .commutative = false, .asm_str = NULL},

@@ -1,15 +1,12 @@
 var x;
+in(x);
 
-x = 0;
-
-if (x)
+if (x >= 5)
 begin
-    x = 0;
+    out(52);
 end
 
 else
 begin
-    x = 1;
+    out(0);
 end;
-
-out(x);
