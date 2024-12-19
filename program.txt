@@ -4,9 +4,4 @@ in(x);
 if (x >= 5)
 begin
     out(52);
-end
-
-else
-begin
-    out(0);
 end;

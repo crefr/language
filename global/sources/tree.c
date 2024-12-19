@@ -30,7 +30,7 @@ void printTreePrefix(tree_context_t * tree, node_t * node)
 
     oper_t oper = opers[node->val.op];
 
-    printf("(%s", oper.name);
+    printf("(%s", oper.dot_name);
 
     printf("(");
     printTreePrefix(tree, node->left);
@@ -153,8 +153,8 @@ static void dotPrintNode(tree_context_t * tree, FILE * dot_file, node_t * node)
     else if (node->type == OPR){
         const char * name = NULL;
 
-        if (opers[node->val.op].name != NULL)
-            name = opers[node->val.op].name;
+        if (opers[node->val.op].dot_name != NULL)
+            name = opers[node->val.op].dot_name;
         else {
             switch (node->val.op){
                 case CALL:

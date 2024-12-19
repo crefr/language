@@ -61,8 +61,9 @@ enum oper{
 };
 
 typedef struct {
-    const char * name;
     enum oper num;
+    const char * name;
+    const char * dot_name;
 
     bool binary;
     bool commutative;
@@ -71,49 +72,49 @@ typedef struct {
 } oper_t;
 
 const oper_t opers[] = {
-    {.name = "+"  , .num = ADD, .binary = true,  .commutative = true , .asm_str = "ADD"},
-    {.name = "-"  , .num = SUB, .binary = true,  .commutative = false, .asm_str = "SUB"},
-    {.name = "*"  , .num = MUL, .binary = true,  .commutative = true , .asm_str = "MUL"},
-    {.name = "/"  , .num = DIV, .binary = true,  .commutative = false, .asm_str = "DIV"},
-    {.name = "^"  , .num = POW, .binary = true,  .commutative = false, .asm_str = "POW"},
-    {.name = "sin", .num = SIN, .binary = false, .commutative = false, .asm_str = "SIN"},
-    {.name = "cos", .num = COS, .binary = false, .commutative = false, .asm_str = "COS"},
-    {.name = "tan", .num = TAN, .binary = false, .commutative = false, .asm_str = "TAN"},
-    {.name = "ln" , .num = LN , .binary = false, .commutative = false, .asm_str = "LN" },
-    {.name = "log", .num = LOG, .binary = true,  .commutative = false, .asm_str = NULL},
-    {.name = "!"  , .num = FAC, .binary = false, .commutative = false, .asm_str = NULL},
+    {.num = ADD, .name = "+"  , .dot_name = "+",   .binary = true,  .commutative = true , .asm_str = "ADD"},
+    {.num = SUB, .name = "-"  , .dot_name = "-",   .binary = true,  .commutative = false, .asm_str = "SUB"},
+    {.num = MUL, .name = "*"  , .dot_name = "*",   .binary = true,  .commutative = true , .asm_str = "MUL"},
+    {.num = POW, .name = "^"  , .dot_name = "^",   .binary = true,  .commutative = false, .asm_str = "POW"},
+    {.num = DIV, .name = "/"  , .dot_name = "/",   .binary = true,  .commutative = false, .asm_str = "DIV"},
+    {.num = SIN, .name = "sin", .dot_name = "sin", .binary = false, .commutative = false, .asm_str = "SIN"},
+    {.num = COS, .name = "cos", .dot_name = "cos", .binary = false, .commutative = false, .asm_str = "COS"},
+    {.num = TAN, .name = "tan", .dot_name = "tan", .binary = false, .commutative = false, .asm_str = "TAN"},
+    {.num = LN , .name = "ln" , .dot_name = "ln",  .binary = false, .commutative = false, .asm_str = "LN" },
+    {.num = LOG, .name = "log", .dot_name = "log", .binary = true,  .commutative = false, .asm_str = NULL},
+    {.num = FAC, .name = "!"  , .dot_name = "!",   .binary = false, .commutative = false, .asm_str = NULL},
 
-    {.name = ">"  , .num = GREATER,         .binary = true, .commutative = false, .asm_str = "CALL __GREATER_OP__:"},
-    {.name = "<"  , .num = LESS   ,         .binary = true, .commutative = false, .asm_str = "CALL __LESS_OP__:"},
-    {.name = ">=" , .num = GREATER_EQ   ,   .binary = true, .commutative = false, .asm_str = "CALL __GREATER_EQ_OP__:"},
-    {.name = "<=" , .num = LESS_EQ   ,      .binary = true, .commutative = false, .asm_str = "CALL __LESS_EQ_OP__:"},
-    {.name = "==" , .num = EQUAL   ,        .binary = true, .commutative = false, .asm_str = "CALL __EQUAL_OP__:"},
-    {.name = "!=" , .num = N_EQUAL   ,      .binary = true, .commutative = false, .asm_str = "CALL __N_EQUAL_OP__:"},
+    {.num = GREATER,    .name = ">"  , .dot_name = "GREATER",    .binary = true, .commutative = false, .asm_str = "CALL __GREATER_OP__:"},
+    {.num = LESS   ,    .name = "<"  , .dot_name = "LESS",       .binary = true, .commutative = false, .asm_str = "CALL __LESS_OP__:"},
+    {.num = GREATER_EQ, .name = ">=" , .dot_name = "GREATER_EQ", .binary = true, .commutative = false, .asm_str = "CALL __GREATER_EQ_OP__:"},
+    {.num = LESS_EQ   , .name = "<=" , .dot_name = "LESS_EQ",    .binary = true, .commutative = false, .asm_str = "CALL __LESS_EQ_OP__:"},
+    {.num = EQUAL   ,   .name = "==" , .dot_name = "EQUAL",      .binary = true, .commutative = false, .asm_str = "CALL __EQUAL_OP__:"},
+    {.num = N_EQUAL   , .name = "!=" , .dot_name = "N_EQUAL",    .binary = true, .commutative = false, .asm_str = "CALL __N_EQUAL_OP__:"},
 
-    {.name = "in",  .num = IN , .binary = false, .commutative = false, .asm_str = NULL},
-    {.name = "out", .num = OUT, .binary = false, .commutative = false, .asm_str = NULL},
+    {.num = IN , .name = "in" , .dot_name = "in" , .binary = false, .commutative = false, .asm_str = NULL},
+    {.num = OUT, .name = "out", .dot_name = "out", .binary = false, .commutative = false, .asm_str = NULL},
 
-    {.name = "("  , .num = LBRACKET, .binary = false, .commutative = false, .asm_str = NULL},
-    {.name = ")"  , .num = RBRACKET, .binary = false, .commutative = false, .asm_str = NULL},
+    {.num = LBRACKET, .name = "(", .dot_name = "(", .binary = false, .commutative = false, .asm_str = NULL},
+    {.num = RBRACKET, .name = ")", .dot_name = ")", .binary = false, .commutative = false, .asm_str = NULL},
 
-    {.name = "if"   , .num = IF,     .binary = true, .commutative = false, .asm_str = NULL},
-    {.name = "else" , .num = IF_ELSE,.binary = true, .commutative = false, .asm_str = NULL},
+    {.num = IF,      .name = "if"   , .dot_name = "if",   .binary = true, .commutative = false, .asm_str = NULL},
+    {.num = IF_ELSE, .name = "else" , .dot_name = "else", .binary = true, .commutative = false, .asm_str = NULL},
 
-    {.name = "while", .num = WHILE, .binary = true, .commutative = false, .asm_str = NULL},
+    {.num = WHILE, .name = "while", .dot_name = "while", .binary = true, .commutative = false, .asm_str = NULL},
 
-    {.name = "var", .num = VAR_DECL, .binary = false, .commutative = false, .asm_str = NULL},
+    {.num = VAR_DECL, .name = "var", .dot_name = "var", .binary = false, .commutative = false, .asm_str = NULL},
 
-    {.name = NULL,    .num = CALL, .binary = true,  .commutative = false, .asm_str = NULL},
-    {.name = "func",  .num = FUNC_DECL, .binary = true,  .commutative = false, .asm_str = NULL},
-    {.name = NULL,    .num = FUNC_HEADER, .binary = true,  .commutative = false, .asm_str = NULL},
-    {.name = ",",    .num = ARG_SEP, .binary = true,  .commutative = false, .asm_str = NULL},
-    {.name = "return",.num = RETURN,    .binary = false, .commutative = false, .asm_str = NULL},
+    {.num = CALL,        .name = NULL,     .dot_name = "CALL",        .binary = true,  .commutative = false, .asm_str = NULL},
+    {.num = FUNC_DECL,   .name = "func",   .dot_name = "func",        .binary = true,  .commutative = false, .asm_str = NULL},
+    {.num = FUNC_HEADER, .name = NULL,     .dot_name = "FUNC_HEADER", .binary = true,  .commutative = false, .asm_str = NULL},
+    {.num = ARG_SEP,     .name = ",",      .dot_name = "ARG_SEP",     .binary = true,  .commutative = false, .asm_str = NULL},
+    {.num = RETURN,      .name = "return", .dot_name = "RETURN",      .binary = false, .commutative = false, .asm_str = NULL},
 
-    {.name = "begin", .num = BEGIN,  .binary = false, .commutative = false, .asm_str = NULL},
-    {.name = "end"  , .num = ENDING, .binary = false, .commutative = false, .asm_str = NULL},
+    { .num = BEGIN,  .name = "begin", .dot_name = "begin", .binary = false, .commutative = false, .asm_str = NULL},
+    { .num = ENDING, .name = "end"  , .dot_name = "end"  , .binary = false, .commutative = false, .asm_str = NULL},
 
-    {.name = "="  , .num = ASSIGN  , .binary = true , .commutative = false, .asm_str = NULL},
-    {.name = ";"  , .num = SEP     , .binary = true , .commutative = false, .asm_str = NULL},
+    {.num = ASSIGN  , .name = "="  , .dot_name = "="  , .binary = true , .commutative = false, .asm_str = NULL},
+    {.num = SEP     , .name = ";"  , .dot_name = "SEP", .binary = true , .commutative = false, .asm_str = NULL},
 };
 const size_t opers_size = sizeof(opers) / sizeof(*opers);
 

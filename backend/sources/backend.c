@@ -495,12 +495,13 @@ static void makeSTDfuncs(be_context_t * be)
         const char * jmp_name;
     };
 
+    // generating funcs using this array
     const struct jmp_func jmps[] = {
-        {"__GREATER_OP__"       , "JA"},
-        {"__LESS_OP__"          , "JB"},
+        {"__GREATER_OP__"       , "JA" },
+        {"__LESS_OP__"          , "JB" },
         {"__GREATER_EQ_OP__"    , "JAE"},
         {"__LESS_EQ_OP__"       , "JBE"},
-        {"__EQUAL_OP__"         , "JE"},
+        {"__EQUAL_OP__"         , "JE" },
         {"__N_EQUAL_OP__"       , "JNE"}
     };
     const size_t func_num = sizeof(jmps) / sizeof(jmps[0]);
