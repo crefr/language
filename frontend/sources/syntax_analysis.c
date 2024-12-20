@@ -267,6 +267,7 @@ static node_t * getFuncDecl(fe_context_t * frontend)
     if (token->type != IDR){
         // so we do not actually need arg tree
         arg_tree = NULL;
+        frontend->ids[id_node->val.id].num_of_args = 0;
     }
     else {
         // so we have at least one argument
@@ -283,6 +284,8 @@ static node_t * getFuncDecl(fe_context_t * frontend)
         node_t * first_arg_node = token;
         token++;
 
+        frontend->ids[id_node->val.id].num_of_args = 1;
+
         arg_tree->left  = first_arg_node;
         arg_tree->right = NULL;
 
@@ -298,6 +301,8 @@ static node_t * getFuncDecl(fe_context_t * frontend)
             }
             node_t * cur_arg_node = token;
             token++;
+
+            frontend->ids[id_node->val.id].num_of_args++;
 
             last_sep->right = cur_sep;
 

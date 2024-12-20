@@ -129,15 +129,15 @@ static int readNameTable(tree_context_t * tree, const char ** cur_pos)
         char type_buf[BUFFER_LEN] = "";
         size_t index = 0;
 
-        size_t func_arg_num = 0;
-        sscanf(*cur_pos, " %zu : \"%[^\"]\" , %[^ ,;] , %zu ;%n", &index, name_buf, type_buf, &func_arg_num, &shift); // TODO: func arg_counter
+        size_t num_of_args = 0;
+
+        sscanf(*cur_pos, " %zu : \"%[^\"]\" , %[^ ,;] , %zu ;%n", &index, name_buf, type_buf, &num_of_args, &shift);
         *cur_pos += shift;
 
         logPrint(LOG_DEBUG, "scanned name: %04zu, \"%s\", %s;\n", index, name_buf, type_buf);
 
         strcpy(tree->ids[index].name, name_buf);
-
-        tree->ids[index].is_local = false; // value by default
+        tree->ids[index].num_of_args = num_of_args;
 
         if (strcmp(type_buf, "FUNC") == 0)
             tree->ids[index].type = FUNC;
@@ -273,7 +273,7 @@ static void writeNameTable(tree_context_t * tree, FILE * out_file)
 
     for (size_t id_index = 0; id_index < tree->id_size; id_index++){
         const char * type_str = (tree->ids[id_index].type == VAR) ? "VAR" : "FUNC";
-        fprintf(out_file, "\t%04zu: \"%s\", %s, %zu;\n", id_index, tree->ids[id_index].name, type_str, 0); // TODO: make func arg counter
+        fprintf(out_file, "\t%04zu: \"%s\", %s, %zu;\n", id_index, tree->ids[id_index].name, type_str, tree->ids[id_index].num_of_args);
     }
 
     fprintf(out_file, "}\n");
