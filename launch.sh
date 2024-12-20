@@ -1,5 +1,5 @@
 ./frontend.exe
-./middleend.exe
+./middleend.exe out.ast
 ./backend.exe
 
 ./processor/asm.exe compiled.asm

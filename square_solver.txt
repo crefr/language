@@ -23,7 +23,7 @@ begin
     var diskr;
     diskr = diskriminant(a, b, c);
 
-    # out(diskr); #
+    out(diskr);
 
     if (diskr > 0)
     begin

@@ -17,12 +17,12 @@ enum oper{
     SUB     = 1,
     MUL     = 2,
     DIV     = 3,
-    POW     = 4, // TODO: you get it
+    POW     = 4,
     SQRT    = 5,
     SIN     = 6,
-    COS,
-    TAN,
-    LN,
+    COS     = 7,
+    TAN     = 8,
+    LN      = 9,
     LOG,
     FAC,
 

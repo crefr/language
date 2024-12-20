@@ -85,7 +85,7 @@ static void printCodeFromTreeRecursive(FILE * out_file, tree_context_t * context
 
             break;
 
-        case IN: case OUT: case COS: case SIN: case LN: case TAN:
+        case IN: case OUT: case COS: case SIN: case LN: case TAN: case SQRT:
             fprintf(out_file, "%s(", opers[op_num].name);
             printCodeFromTreeRecursive(out_file, context, node->left, false);
             fprintf(out_file, ")");

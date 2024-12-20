@@ -11,6 +11,8 @@ backend.exe
 
 middleend.exe
 
+orientiered_tree.ast
+
 logs/
 backend_logs/
 frontend_logs/

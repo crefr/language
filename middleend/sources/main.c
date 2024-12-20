@@ -3,9 +3,14 @@
 
 #include "middleend.h"
 
-int main()
+int main(int argc, char ** argv)
 {
-    middleendRun("out.txt");
+    const char * tree_file_name = "out.ast";
+
+    if (argc > 1)
+        tree_file_name = argv[1];
+
+    middleendRun(tree_file_name);
 
     return 0;
 }

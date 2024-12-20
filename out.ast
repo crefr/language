@@ -210,13 +210,9 @@ NAMETABLE size: 10 {
 }
 }
 {OPR:SEP
-{OPR:OUT
-{IDR:6}{}}
-{OPR:SEP
 {OPR:RET
 {IDR:6}{}}
 {}}
-}
 }
 }
 }

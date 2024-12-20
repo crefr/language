@@ -23,3 +23,4 @@ middleend:
 clean:
 	cd $(FRONTEND_DIR) && make clean
 	cd $(BACKEND_DIR)  && make clean
+	cd $(MIDDLEEND_DIR)  && make clean

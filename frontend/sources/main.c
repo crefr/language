@@ -19,12 +19,28 @@ int main(int argc, char ** argv)
     logCancelBuffer();
 
     if (argc > 1 && (strcmp(argv[1], "-1") == 0)){
-        reverseFrontendRun("out.txt", "generated_code.txt");
+        const char * ir_file_name = "out.ast";
+        const char * code_file_name = "generated_code.txt";
+
+        if (argc > 2){
+            ir_file_name   = argv[2];
+            code_file_name = argv[3];
+        }
+
+        reverseFrontendRun(ir_file_name, code_file_name);
 
         return 0;
     }
 
-    frontendRun("program.txt", "out.txt");
+    const char * code_file_name = "program.txt";
+    const char * ir_file_name   = "out.ast";
+
+    if (argc > 1){
+        code_file_name = argv[1];
+        ir_file_name   = argv[2];
+    }
+
+    frontendRun(code_file_name, ir_file_name);
 
     logExit();
 

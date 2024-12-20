@@ -77,6 +77,8 @@ PUSH RAX
 ; call ended
 POP  [RBX 4] ; diskr (local)
 PUSH [RBX 4] ; diskr (local)
+OUT
+PUSH [RBX 4] ; diskr (local)
 PUSH 0
 CALL __GREATER_OP__:
 PUSH 0
