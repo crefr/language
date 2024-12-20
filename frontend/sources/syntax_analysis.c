@@ -42,7 +42,7 @@ static node_t * getNumber(fe_context_t * frontend);
 static node_t * getMathFunc(fe_context_t * frontend);
 static node_t * getId(fe_context_t * frontend);
 
-static void syntaxError(const char * expected, node_t * node);
+static void syntaxError(fe_context_t * fe, const char * expected, node_t * node);
 
 #define LOG_SYNTAX_FUNC_INFO       \
     logPrint(LOG_DEBUG_PLUS, "SYNTAX: in %-20s (token #%zu)\n", __FUNCTION__, (size_t)(token - frontend->tokens))
@@ -50,13 +50,18 @@ static void syntaxError(const char * expected, node_t * node);
 
 #define token (frontend->cur_node)
 
+#define SYNTAX_ERROR(expected)              \
+    do {                                    \
+        frontend->status = HARD_ERROR;      \
+        syntaxError(frontend, expected, token);       \
+                                            \
+        return NULL;                        \
+    } while(0)
+
 #define LBRACKET_SKIP                                                   \
     do {                                                                \
         if (!(token->type == OPR && token->val.op == LBRACKET)){        \
-            frontend->status = HARD_ERROR;                              \
-            syntaxError("(", token);                                    \
-                                                                        \
-            return NULL;                                                \
+            SYNTAX_ERROR("(");                                          \
         }                                                               \
         token++;                                                        \
     } while(0)
@@ -64,10 +69,7 @@ static void syntaxError(const char * expected, node_t * node);
 #define RBRACKET_SKIP                                                   \
     do {                                                                \
         if (!(token->type == OPR && token->val.op == RBRACKET)){        \
-            frontend->status = HARD_ERROR;                              \
-            syntaxError(")", token);                                    \
-                                                                        \
-            return NULL;                                                \
+            SYNTAX_ERROR(")");                                          \
         }                                                               \
         token++;                                                        \
     } while(0)
@@ -114,8 +116,7 @@ static node_t * getBlock(fe_context_t * frontend)
     }
 
     if (! tokenisOPR(ENDING)){
-        frontend->status = HARD_ERROR;
-        return NULL;
+        SYNTAX_ERROR("end");
     }
     token++;
 
@@ -131,11 +132,11 @@ static node_t * getChain(fe_context_t * frontend)
     LOG_SYNTAX_FUNC_INFO;
 
     node_t * cur = getStatement(frontend);
+    if (frontend->status == HARD_ERROR)
+        return NULL;
 
     if (!(token->type == OPR && token->val.op == SEP)){
-        frontend->status = HARD_ERROR;
-
-        return NULL;
+        SYNTAX_ERROR(";");
     }
 
     node_t * tree = token;
@@ -146,9 +147,7 @@ static node_t * getChain(fe_context_t * frontend)
 
     while ((cur = getStatement(frontend)) != NULL){
         if (!(token->type == OPR && token->val.op == SEP)){
-            frontend->status = HARD_ERROR;
-
-            return NULL;
+            SYNTAX_ERROR(";");
         }
 
         token->left = cur;
@@ -250,8 +249,7 @@ static node_t * getFuncDecl(fe_context_t * frontend)
     token++;
 
     if (token->type != IDR){
-        frontend->status = HARD_ERROR;
-        return NULL;
+        SYNTAX_ERROR("identifier");
     }
     node_t * id_node = token;
     token++;
@@ -278,8 +276,7 @@ static node_t * getFuncDecl(fe_context_t * frontend)
 
         // first arg handling
         if (token->type != IDR){
-            frontend->status = HARD_ERROR;
-            return NULL;
+            SYNTAX_ERROR("identifier");
         }
         node_t * first_arg_node = token;
         token++;
@@ -296,8 +293,7 @@ static node_t * getFuncDecl(fe_context_t * frontend)
         while (cur_sep->type == OPR && cur_sep->val.op == ARG_SEP){
             token++;
             if (token->type != IDR){
-                frontend->status = HARD_ERROR;
-                return NULL;
+                SYNTAX_ERROR("identifier");
             }
             node_t * cur_arg_node = token;
             token++;
@@ -357,8 +353,7 @@ static node_t * getElse(fe_context_t * frontend)
 
     node_t * else_body_tree = getBlock(frontend);
     if (else_body_tree == NULL){
-        frontend->status = HARD_ERROR;
-        return NULL;
+        SYNTAX_ERROR("else body");
     }
 
     // on the left should be IF body
@@ -422,7 +417,6 @@ static node_t * getIF(fe_context_t * frontend)
     return if_node;
 }
 
-// TODO: getInput, getOutput etc. can be implemented in one function with table of standard functions
 static node_t * getSTDfunc(fe_context_t * frontend)
 {
     assert(frontend);
@@ -466,7 +460,7 @@ static node_t * getInput(fe_context_t * frontend)
 
     node_t * var_node = getId(frontend);
     if (frontend->status != SUCCESS)
-        return NULL;
+        SYNTAX_ERROR("identifier");
 
     RBRACKET_SKIP;
 
@@ -545,8 +539,7 @@ static node_t * getAssign(fe_context_t * frontend)
 
     node_t * assign_node = token;
     if (!(token->type == OPR && token->val.op == ASSIGN)){
-        syntaxError("=", token);
-        return NULL;
+        SYNTAX_ERROR("=");
     }
     token++;
 
@@ -692,13 +685,7 @@ static node_t * getPrimary(fe_context_t * frontend)
 
         node_t * node = getExpr(frontend);
 
-        if (!(token->type == OPR && token->val.op == RBRACKET)){
-            frontend->status = HARD_ERROR;
-            syntaxError(")", token);
-
-            return NULL;
-        }
-        token++;
+        RBRACKET_SKIP;
 
         return node;
     }
@@ -744,8 +731,7 @@ static node_t * getVarDecl(fe_context_t * frontend)
     token++;
 
     if (token->type != IDR){
-        frontend->status = HARD_ERROR;
-        return NULL;
+        SYNTAX_ERROR("identifier");
     }
     node_t * id_node = token;
     token++;
@@ -857,7 +843,7 @@ static node_t * getNumber(fe_context_t * frontend)
 
         return num_node;
     }
-    frontend->status = HARD_ERROR;
+    SYNTAX_ERROR("number");
 
     return NULL;
 }
@@ -930,10 +916,18 @@ static node_t * getMathFunc(fe_context_t * frontend)
 #undef LBRACKET_SKIP
 #undef token
 
-//TODO add more functionality
-static void syntaxError(const char * expected, node_t * node)
+static void syntaxError(fe_context_t * fe, const char * expected, node_t * node)
 {
     assert(expected);
 
-    fprintf(stderr, "SYNTAX ERROR\n");
+    const char * what_got = NULL;
+
+    if (node->type == OPR)
+        what_got = opers[node->val.op].name;
+    else if (node->type == IDR)
+        what_got = fe->ids[node->val.id].name;
+    else
+        what_got = "NUMBER";
+
+    fprintf(stderr, "SYNTAX ERROR: expected %s, but got '%s'\n", expected, what_got);
 }

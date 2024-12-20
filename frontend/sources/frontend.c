@@ -8,6 +8,7 @@
 
 #include "frontend.h"
 #include "logger.h"
+#include "IR_handler.h"
 
 fe_context_t frontendInit(size_t token_num)
 {
@@ -38,6 +39,51 @@ void frontendDtor(fe_context_t * frontend)
 
     free(frontend->tokens);
     frontend->tokens = NULL;
+}
+
+void frontendRun(const char * in_file_name, const char * out_file_name)
+{
+    assert(in_file_name);
+    assert(out_file_name);
+
+    fe_context_t fe = frontendInit(MAX_TOKEN_NUM);
+
+    char * str = readProgramText(in_file_name);
+
+    if (lexicalAnalysis(&fe, str) != 0){
+        frontendDtor(&fe);
+        free(str);
+
+        return;
+    }
+
+    frontendDump(&fe);
+
+    tree_context_t tr = {};         // TODO: GET RID OF THAT
+    tr.cur_node = fe.cur_node;
+    tr.ids = fe.ids;
+    tr.id_size = fe.id_size;
+
+    node_t * tree = parseCode(&fe);
+    if (tree == NULL){
+        frontendDtor(&fe);
+        free(str);
+
+        return;
+    }
+
+    treeDumpGraph(&tr, tree, LOG_FOLDER_NAME);
+
+    printTreePrefix(&tr, tree);
+    printf("\n");
+
+    FILE * out = fopen(out_file_name, "w");
+
+    writeTreeToFile(&tr, tree, out);
+    fclose(out);
+
+    frontendDtor(&fe);
+    free(str);
 }
 
 void frontendDump(fe_context_t * frontend)

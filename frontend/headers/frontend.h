@@ -7,6 +7,12 @@
 #include "tree.h"
 #include "IR_handler.h"
 
+const size_t MAX_CODE_LEN   = 1024;
+const size_t MAX_TOKEN_NUM  = 1024;
+
+const char * const LOG_FOLDER_NAME = "frontend_logs";
+const char * const LOG_FILE_NAME   = "frontend_logs/log.html";
+
 const char COMMENT_START = '#';
 const char COMMENT_END   = '#';
 
@@ -46,11 +52,14 @@ fe_context_t frontendInit(size_t token_num);
 /// @brief destruct frontend context
 void frontendDtor(fe_context_t * frontend);
 
+void frontendRun(const char * in_file_name, const char * out_file_name);
+
 void frontendDump(fe_context_t * frontend);
 
 /// @brief do lexical analysis of the source code, returns 0 if succeeded
 int lexicalAnalysis(fe_context_t * frontend, const char * code);
 
 node_t * parseCode(fe_context_t * frontend);
+
 
 #endif

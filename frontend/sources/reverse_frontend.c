@@ -6,6 +6,7 @@
 #include "tree.h"
 #include "logger.h"
 #include "reverse_frontend.h"
+#include "frontend.h"
 
 static void printCodeFromTreeRecursive(FILE * out_file, tree_context_t * context, node_t * node, bool need_tabs);
 
@@ -14,6 +15,25 @@ static void printTabs(FILE * out_file, size_t tabs_num);
 static void printFuncArgs(FILE * out_file, tree_context_t * context, node_t * start_node);
 
 static void printBlock(FILE * out_file, tree_context_t * context, node_t * node);
+
+void reverseFrontendRun(const char * in_file_name, const char * out_file_name)
+{
+    fe_context_t fe = frontendInit(MAX_TOKEN_NUM);
+
+    tree_context_t tr = {};         //TODO: GET RID OF THAT
+    tr.cur_node = fe.cur_node;
+    tr.ids = fe.ids;
+    tr.id_size = fe.id_size;
+
+    node_t * tree = readTreeFromIR(&tr, in_file_name);
+    treeDumpGraph(&tr, tree, LOG_FOLDER_NAME);
+
+    printCodeFromTree(out_file_name, &tr, tree);
+
+    frontendDump(&fe);
+
+    frontendDtor(&fe);
+}
 
 void printCodeFromTree(const char * out_file_name, tree_context_t * context, node_t * root)
 {

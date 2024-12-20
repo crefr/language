@@ -169,7 +169,7 @@ static void enterNewScope(be_context_t * be, enum scope_start scope)
 
 static void quitScope(be_context_t * be, enum scope_start scope)
 {
-    // finding START_OF_SCOPE
+    // finding scope beginning
     size_t search_index = be->idr_stack->size;
 
     while (be->idr_stack->elems[search_index].name_index != scope)
