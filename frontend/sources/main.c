@@ -19,7 +19,7 @@ int main(int argc, char ** argv)
     logCancelBuffer();
 
     if (argc > 1 && (strcmp(argv[1], "-1") == 0)){
-        const char * ir_file_name = "out.ast";
+        const char * ir_file_name   = "out.ast";
         const char * code_file_name = "generated_code.txt";
 
         if (argc > 2){

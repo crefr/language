@@ -1,7 +1,7 @@
 <RESULT>  ::= <Chain>
 
 <Chain>   ::= (<Statement> ";")*
-<Statement>::= <STDfunc> | <Return> | <IF> | <While> | <VarDecl> | <FuncDecl> | <Assign>
+<Statement>::= <FuncCall> | <STDfunc> | <Return> | <IF> | <While> | <VarDecl> | <FuncDecl> | <Assign>
 
 <IF>      ::= "if" "(" <Expr> ")" <Block> (<ELSE>)?
 <ELSE>    ::= "else" <Block>

@@ -1,75 +1,20 @@
-var a;
-var b;
-var c;
+var x;
+in(x);
 
-in(a);
-in(b);
-in(c);
+out(factorial(x));
 
-a = solveSq(a, b, c);
-
-func solveSq(a, b, c)
+func factorial(number)
 begin
-    if (a == 0)
+    if (number-1)
     begin
-        var x;
+        var answer;
+        var new_number;
 
-        x = solveLinear(b, c);
-        out(x);
+        new_number = number - 1;
+        answer = factorial(new_number) * number;
 
-        return 0;
+        return answer;
     end;
 
-    var diskr;
-    diskr = diskriminant(a, b, c);
-
-    # out(diskr); #
-
-    if (diskr > 0)
-    begin
-        var x1;
-        var x2;
-
-        x1 = (0 - b + sqrt(diskr)) / (2*a);
-        x2 = (0 - b - sqrt(diskr)) / (2*a);
-
-        out (x1);
-        out (x2);
-    end
-
-    else
-    begin
-        if (diskr == 0)
-        begin
-            var x;
-            x = (0 - b) / (2*a);
-
-            out(x);
-        end
-
-        else
-        begin
-            out(52);
-        end;
-    end;
-
-    return 0;
-end;
-
-func diskriminant(a, b, c)
-begin
-    var diskr;
-
-    diskr = b*b - 4 * a*c;
-
-    return diskr;
-end;
-
-func solveLinear(a, b)
-begin
-    var x;
-
-    x = (0 - b) / a;
-
-    return x;
+    return 1;
 end;

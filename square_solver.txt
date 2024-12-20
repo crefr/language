@@ -65,11 +65,11 @@ begin
     return diskr;
 end;
 
-func solveLinear(a, b)
+func solveLinear(b, a)
 begin
     var x;
 
-    x = (0 - b) / a;
+    x = (0 - a) / b;
 
     return x;
 end;

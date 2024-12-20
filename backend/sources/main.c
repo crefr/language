@@ -16,12 +16,12 @@ int main(int argc, char ** argv)
     logStart("backend_logs/log.html", LOG_DEBUG_PLUS, LOG_HTML);
     logCancelBuffer();
 
-    const char * asm_file_name = "compiled.asm";
     const char * ir_file_name  = "out.ast";
+    const char * asm_file_name = "compiled.asm";
 
     if (argc > 1){
-        asm_file_name = argv[1];
-        ir_file_name  = argv[2];
+        ir_file_name  = argv[1];
+        asm_file_name = argv[2];
     }
 
     be_context_t backend = backendInit(MAX_NODES_NUM, asm_file_name, ir_file_name);
