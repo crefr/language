@@ -1,17 +1,4 @@
 var x;
-in(x);
+var y;
 
-out(factorial(x  5));
-
-func factorial(number)
-begin
-    if (number-1)
-    begin
-        var answer;
-        answer = factorial(number - 1) * number;
-
-        return answer;
-    end;
-
-    return 1;
-end;
+x = 0 * y;

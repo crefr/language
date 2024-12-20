@@ -1,10 +1,12 @@
 BUILD = LINUX
 
-FRONTEND_DIR = frontend/
-BACKEND_DIR  = backend/
+FRONTEND_DIR  = frontend/
+BACKEND_DIR   = backend/
+MIDDLEEND_DIR = middleend/
 
 .PHONY: frontend
 .PHONY: backend
+.PHONY: middleend
 
 all: frontend backend
 
@@ -14,6 +16,9 @@ backend:
 
 frontend:
 	cd $(FRONTEND_DIR) && make BUILD=$(BUILD)
+
+middleend:
+	cd $(MIDDLEEND_DIR) && make BUILD=$(BUILD)
 
 clean:
 	cd $(FRONTEND_DIR) && make clean
