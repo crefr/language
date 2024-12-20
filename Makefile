@@ -8,7 +8,7 @@ MIDDLEEND_DIR = middleend/
 .PHONY: backend
 .PHONY: middleend
 
-all: frontend backend
+all: frontend backend middleend
 
 
 backend:

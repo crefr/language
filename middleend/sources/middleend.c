@@ -121,7 +121,7 @@ node_t * foldConstants(me_context_t * me, node_t * node, bool * changed_tree)
     node->left  = foldConstants(me, node->left , changed_tree);
     node->right = foldConstants(me, node->right, changed_tree);
 
-    if (! opers[node->val.op].can_simple)
+    if (! opers[op_num].can_simple)
         return node;
 
     double new_val = 0.;
@@ -142,6 +142,9 @@ node_t * foldConstants(me_context_t * me, node_t * node, bool * changed_tree)
             return node;
     }
     else {
+        if (! node->left)
+            return node;
+
         if (node->left->type == NUM){
             double val = node->left->val.number;
             new_val = calcOper(op_num, val, 0);

@@ -880,7 +880,7 @@ static node_t * getMathFunc(fe_context_t * frontend)
     }
 
     switch (token->val.op){
-        case SIN: case COS: case LN: case TAN:{
+        case SIN: case COS: case LN: case TAN: case SQRT:{
             node_t * func_node = token;
             token++;
 

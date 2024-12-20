@@ -1,4 +1,73 @@
-var x;
-var y;
+var a;
+var b;
+var c;
 
-x = 0 * y;
+in(a);
+in(b);
+in(c);
+
+a = solveSq(a, b, c);
+
+func solveSq(a, b, c)
+begin
+    if (a == 0)
+    begin
+        var x;
+
+        x = solveLinear(b, c);
+        out(x);
+
+        return 0;
+    end;
+
+    var diskr;
+    diskr = diskriminant(a, b, c);
+
+    if (diskr > 0)
+    begin
+        var x1;
+        var x2;
+
+        x1 = (0 - b + sqrt(diskr)) / (2*a);
+        x2 = (0 - b - sqrt(diskr)) / (2*a);
+
+        out (x1);
+        out (x2);
+    end
+
+    else
+    begin
+        if (diskr == 0)
+        begin
+            var x;
+            x = (0 - b) / (2*a);
+
+            out(x);
+        end
+
+        else
+        begin
+            out(52);
+        end;
+    end;
+
+    return 0;
+end;
+
+func diskriminant(a, b, c)
+begin
+    var diskr;
+
+    diskr = b*b - 4 * a*c;
+
+    return diskr;
+end;
+
+func solveLinear(a, b)
+begin
+    var x;
+
+    x = (0 - b) / a;
+
+    return x;
+end;
