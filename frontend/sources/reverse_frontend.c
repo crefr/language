@@ -8,6 +8,8 @@
 #include "reverse_frontend.h"
 #include "frontend.h"
 
+static void printCodeFromTree(const char * out_file_name, tree_context_t * context, node_t * root);
+
 static void printCodeFromTreeRecursive(FILE * out_file, tree_context_t * context, node_t * node, bool need_tabs);
 
 static void printTabs(FILE * out_file, size_t tabs_num);

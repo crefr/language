@@ -3,8 +3,7 @@
 
 #include "tree.h"
 
-void printCodeFromTree(const char * out_file_name, tree_context_t * context, node_t * root);
-
+/// @brief main function for reverse frontend
 void reverseFrontendRun(const char * in_file_name, const char * out_file_name);
 
 #endif

@@ -52,13 +52,16 @@ fe_context_t frontendInit(size_t token_num);
 /// @brief destruct frontend context
 void frontendDtor(fe_context_t * frontend);
 
+/// @brief main function for frontend
 void frontendRun(const char * in_file_name, const char * out_file_name);
 
+/// @brief dump frontend info
 void frontendDump(fe_context_t * frontend);
 
 /// @brief do lexical analysis of the source code, returns 0 if succeeded
 int lexicalAnalysis(fe_context_t * frontend, const char * code);
 
+/// @brief start syntax analysis
 node_t * parseCode(fe_context_t * frontend);
 
 
