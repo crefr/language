@@ -5,7 +5,7 @@ out(factorial(x));
 
 func factorial(number)
 begin
-    if (number-1)
+    if (number > 1)
     begin
         var answer;
         var new_number;

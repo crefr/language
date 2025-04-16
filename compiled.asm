@@ -21,7 +21,7 @@ JMP END_OF_FUNC_factorial: ;skipping func body
 factorial:
 PUSH [RBX 0] ; number (local)
 PUSH 1
-SUB
+CALL __GREATER_OP__:
 PUSH 0
 JE IF_END_0:
 PUSH [RBX 0] ; number (local)
