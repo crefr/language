@@ -92,3 +92,49 @@ If you want to translate the IR back to the source code you can use reverse fron
 ```bash
 frontend.exe -1 program_IR.ast source_code.txt
 ```
+
+## Grammar
+
+Here is the grammar of the language syntax in the BNF-like format (you can also find it in the [`grammar.txt`](grammar.txt)):
+
+```
+<RESULT>    ::= <Chain>
+
+<Chain>     ::= (<Statement> ";")*
+<Statement> ::= <FuncCall> | <STDfunc> | <Return> | <IF> | <While> | <VarDecl> | <FuncDecl> | <Assign>
+
+<IF>        ::= "if" "(" <Expr> ")" <Block> (<ELSE>)?
+<ELSE>      ::= "else" <Block>
+
+<While>     ::= "while" "(" <Expr> ")" <Block>
+
+<VarDecl>   ::= "var" <ID>
+
+<FuncDecl>  ::= "func" <ID> "(" <Var> ("," <Var>)* ")" <Block>
+<Block>     ::= "begin" <Chain> "end"
+
+<Assign>    ::= <Var> "=" <Expr>
+<STDfunc>   ::= <Input> | <Output>
+
+<Return>    ::= "return" <Expr>
+
+<Input>     ::= "in"  "(" <Var> ")"
+<Output>    ::= "out" "(" <Expr> ")"
+
+<Expr>      ::= <AddSub> ((">" | "<") <AddSub>)*
+
+<AddSub>    ::= <MulDiv> (("+" | "-") <MulDiv>)*
+<MulDiv>    ::= <Power>  (("*" | "/") <Power>)*
+
+<Power>     ::= <Primary> ("^" <Power>)?
+<Primary>   ::= "(" <Expr> ")" | <MathFunc> | <FuncCall> | <Var> | <Number>
+
+<FuncCall>  ::= <ID> "(" <Expr> ("," <Expr>)* ")"
+<Var>	    ::= <ID>
+
+<ID>	    ::= ([a-z] | "_") ([a-z] | [0-9] | "_")*
+<Number>    ::= [0-9]+
+<MathFunc>  ::= "sin" | "cos" | "tan" | "ln"
+```
+
+Also this grammar is available at the BNF Playground (the [link](https://bnfplayground.pauliankline.com/?bnf=%3CRESULT%3E%20%20%3A%3A%3D%20%3CChain%3E%0A%0A%3CChain%3E%20%20%20%3A%3A%3D%20(%3CStatement%3E%20%22%3B%22)*%0A%3CStatement%3E%20%3A%3A%3D%20%3CFuncCall%3E%20%7C%20%3CSTDfunc%3E%20%7C%20%3CReturn%3E%20%7C%20%3CIF%3E%20%7C%20%3CWhile%3E%20%7C%20%3CVarDecl%3E%20%7C%20%3CFuncDecl%3E%20%7C%20%3CAssign%3E%0A%0A%3CIF%3E%20%20%20%20%20%20%3A%3A%3D%20%22if%22%20%22(%22%20%3CExpr%3E%20%22)%22%20%3CBlock%3E%20(%3CELSE%3E)%3F%0A%3CELSE%3E%20%20%20%20%3A%3A%3D%20%22else%22%20%3CBlock%3E%0A%0A%3CWhile%3E%20%20%20%3A%3A%3D%20%22while%22%20%22(%22%20%3CExpr%3E%20%22)%22%20%3CBlock%3E%0A%0A%3CVarDecl%3E%20%3A%3A%3D%20%22var%22%20%3CID%3E%0A%0A%3CFuncDecl%3E%20%3A%3A%3D%20%22func%22%20%3CID%3E%20%22(%22%20%3CVar%3E%20(%22%2C%22%20%3CVar%3E)*%20%22)%22%20%3CBlock%3E%0A%3CBlock%3E%20%20%20%3A%3A%3D%20%22begin%22%20%3CChain%3E%20%22end%22%0A%0A%3CAssign%3E%20%20%3A%3A%3D%20%3CVar%3E%20%22%3D%22%20%3CExpr%3E%0A%3CSTDfunc%3E%20%3A%3A%3D%20%3CInput%3E%20%7C%20%3COutput%3E%0A%0A%3CReturn%3E%20%20%3A%3A%3D%20%22return%22%20%3CExpr%3E%0A%0A%3CInput%3E%20%20%20%3A%3A%3D%20%22in%22%20%20%22(%22%20%3CVar%3E%20%22)%22%0A%3COutput%3E%20%20%3A%3A%3D%20%22out%22%20%22(%22%20%3CExpr%3E%20%22)%22%0A%0A%3CExpr%3E%20%20%20%20%3A%3A%3D%20%3CAddSub%3E%20((%22%3E%22%20%7C%20%22%3C%22)%20%3CAddSub%3E)*%0A%0A%3CAddSub%3E%20%20%3A%3A%3D%20%3CMulDiv%3E%20((%22%2B%22%20%7C%20%22-%22)%20%3CMulDiv%3E)*%0A%3CMulDiv%3E%20%20%3A%3A%3D%20%3CPower%3E%20%20((%22*%22%20%7C%20%22%2F%22)%20%3CPower%3E)*%0A%0A%3CPower%3E%20%20%20%3A%3A%3D%20%3CPrimary%3E%20(%22%5E%22%20%3CPower%3E)%3F%0A%3CPrimary%3E%20%3A%3A%3D%20%22(%22%20%3CExpr%3E%20%22)%22%20%7C%20%3CMathFunc%3E%20%7C%20%3CFuncCall%3E%20%7C%20%3CVar%3E%20%7C%20%3CNumber%3E%0A%0A%3CFuncCall%3E%20%3A%3A%3D%20%3CID%3E%20%22(%22%20%3CExpr%3E%20(%22%2C%22%20%3CExpr%3E)*%20%22)%22%0A%3CVar%3E%09%20%20%3A%3A%3D%20%3CID%3E%0A%0A%3CID%3E%09%20%20%3A%3A%3D%20(%5Ba-z%5D%20%7C%20%22_%22)%20(%5Ba-z%5D%20%7C%20%5B0-9%5D%20%7C%20%22_%22)*%0A%3CNumber%3E%20%20%3A%3A%3D%20%5B0-9%5D%2B%0A%3CMathFunc%3E%20%3A%3A%3D%20%22sin%22%20%7C%20%22cos%22%20%7C%20%22tan%22%20%7C%20%22ln%22&name=))
