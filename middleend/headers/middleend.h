@@ -12,7 +12,7 @@ typedef struct {
 
     node_t * root;
 
-    idr_t ids[MAX_IDR_NUM];
+    idr_t * ids;
     unsigned int id_size;
 } me_context_t;
 

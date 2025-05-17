@@ -1,5 +1,7 @@
 language.exe
 
+*.exe
+
 Obj/
 frontend/Obj/
 backend/Obj/

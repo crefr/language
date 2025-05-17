@@ -27,6 +27,7 @@ me_context_t middleendInit(const char * tree_file_name)
 
     context.root = readTreeFromIR(&tree, tree_file_name);
     context.id_size = tree.id_size;
+    context.ids     = tree.ids;
 
     context.free_node = tree.cur_node + 1;
 
@@ -86,8 +87,10 @@ node_t * newNumNode(me_context_t * context, double number)
 void middleendDestroy(me_context_t * me)
 {
     free(me->nodes);
+    free(me->ids);
 
     me->nodes = NULL;
+    me->ids   = NULL;
 }
 
 node_t * simplifyExpression(me_context_t * me, node_t * node)

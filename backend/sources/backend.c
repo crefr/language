@@ -83,12 +83,12 @@ static void readTreeForBackend(be_context_t * be, const char * tree_file_name)
 
     sub_context.cur_node = be->cur_node;
     sub_context.id_size  = be->id_size;
-    sub_context.ids      = be->ids;
 
     readTreeFromIR(&sub_context, tree_file_name);
 
     be->cur_node = sub_context.cur_node;
     be->id_size  = sub_context.id_size;
+    be->ids      = sub_context.ids;
 }
 
 void backendDtor(be_context_t * context)
@@ -96,9 +96,11 @@ void backendDtor(be_context_t * context)
     assert(context);
 
     free(context->nodes);
+    free(context->ids);
 
     context->nodes    = NULL;
     context->cur_node = NULL;
+    context->ids      = NULL;
 
     fclose(context->asm_file);
 

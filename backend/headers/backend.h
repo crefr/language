@@ -34,7 +34,7 @@ typedef struct {
     node_t * root;
     node_t * cur_node;
 
-    idr_t ids[MAX_IDR_NUM];
+    idr_t * ids;
     unsigned int id_size;
 
     size_t if_counter;

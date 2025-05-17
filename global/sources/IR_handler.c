@@ -119,7 +119,12 @@ static int readNameTable(tree_context_t * tree, const char ** cur_pos)
     int shift = 0;
 
     size_t nametable_size = 0;
-    sscanf(*cur_pos, " NAMETABLE size: %zu {%n", &nametable_size, &shift); // TODO: reallocating name table
+    sscanf(*cur_pos, " NAMETABLE size: %zu {%n", &nametable_size, &shift);
+
+    // allocating memory for name table
+    tree->ids = (idr_t *)calloc(nametable_size, sizeof(idr_t));
+    tree->id_size = nametable_size;
+
     *cur_pos += shift;
 
     shift = 0;
@@ -143,8 +148,6 @@ static int readNameTable(tree_context_t * tree, const char ** cur_pos)
             tree->ids[index].type = FUNC;
         else
             tree->ids[index].type = VAR;
-
-        tree->id_size++;
 
         shift = 0;
         sscanf(*cur_pos, " }%n", &shift);
