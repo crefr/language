@@ -13,52 +13,52 @@ enum elem_type{
 const size_t MAX_ELEM_TYPE_NAME_LEN = 10;
 
 enum oper{
-    ADD     = 0,
-    SUB     = 1,
-    MUL     = 2,
-    DIV     = 3,
-    POW     = 4,
-    SQRT    = 5,
-    SIN     = 6,
-    COS     = 7,
-    TAN     = 8,
-    LN      = 9,
-    LOG,
-    FAC,
+    ADD      = 0,
+    SUB      = 1,
+    MUL      = 2,
+    DIV      = 3,
+    POW      = 4,
+    SQRT     = 5,
+    SIN      = 6,
+    COS      = 7,
+    TAN      = 8,
+    LN       = 9,
+    LOG      = 10,
+    FAC      = 11,
 
-    GREATER,
-    LESS,
-    GREATER_EQ,
-    LESS_EQ,
-    EQUAL,
-    N_EQUAL,
+    GREATER  = 12,
+    LESS     = 13,
+    GREATER_EQ = 14,
+    LESS_EQ  = 15,
+    EQUAL    = 16,
+    N_EQUAL  = 17,
 
-    IN,
-    OUT,
+    IN       = 18,
+    OUT      = 19,
 
-    LBRACKET,
-    RBRACKET,
+    LBRACKET = 20,
+    RBRACKET = 21,
 
-    IF,
-    IF_ELSE,
+    IF       = 22,
+    IF_ELSE  = 23,
 
-    WHILE,
+    WHILE    = 24,
 
-    VAR_DECL,
+    VAR_DECL = 25,
 
-    CALL,
-    FUNC_DECL,
-    FUNC_HEADER,
-    ARG_SEP,
-    RETURN,
+    CALL     = 26,
+    FUNC_DECL = 27,
+    FUNC_HEADER = 28,
+    ARG_SEP  = 29,
+    RETURN   = 30,
 
-    BEGIN,
-    ENDING,
+    BEGIN    = 31,
+    ENDING   = 32,
 
-    ASSIGN,
-    SEP,
+    ASSIGN   = 33,
+    SEP      = 34,
 
-    NO_OP
+    NO_OP    = 35
 };
 
 typedef struct {

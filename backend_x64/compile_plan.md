@@ -124,15 +124,17 @@ FUNC_DECL func(arg1, arg2, ..., argN)
 ### Start
 
 ```asm
-    mov rbp, rsp
-    push rbp
+    mov rbx, rsp
+    push rbx
 ```
 
 ### Exit
 
 ```asm
+    pop rbx
+
     mov rax, 0x3c
-    mov rdi, 0x01
+    mov rdi, 0x00
     syscall
 ```
 
@@ -144,7 +146,7 @@ in(var)
 
 ```asm
     call __in_standard_func_please_do_not_name_your_funcs_this_name__
-    push rax
+    mov [var], rax
 ```
 
 ### Out
@@ -180,11 +182,11 @@ __IF_XXX_END:
     pop rsi
 
     test rsi, rsi
-jz __IF_XXX_ELSE
+    jz __IF_XXX_ELSE
 
     ; ... IF body ...
 
-jmp __IF_XXX_END
+    jmp __IF_XXX_END
 
 __IF_XXX_ELSE:
 

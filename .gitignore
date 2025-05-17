@@ -1,6 +1,10 @@
 language.exe
 
 *.exe
+asm_file.asm
+
+*.o
+*.out
 
 Obj/
 frontend/Obj/
