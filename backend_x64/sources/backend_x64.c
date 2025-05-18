@@ -210,7 +210,6 @@ static void emitStart(backend_ctx_t * ctx)
 {
     asm_emit("_start:\n");
     asm_emit("mov rbx, rsp\n");
-    asm_emit("push rbx\n");
 }
 
 
@@ -517,8 +516,8 @@ static void translateFuncDecl(backend_ctx_t * ctx, node_t * node)
     asm_emit("jmp __END_OF_%s__\n", func_name);
 
     asm_emit("%s:\n", func_name);
-    asm_emit("mov rbp, rsp\n");
     asm_emit("push rbp\n");
+    asm_emit("mov rbp, rsp\n");
 
     makeAssemblyCodeRecursive(ctx, func_body);
 
