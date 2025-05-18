@@ -52,6 +52,5 @@ backend_ctx_t backendInit(const char * ast_file_name);
 
 void backendDestroy(backend_ctx_t * ctx);
 
-void makeAssemblyCode(backend_ctx_t * ctx, const char * asm_file_name);
-
+void makeAssemblyCode(backend_ctx_t * ctx, const char * asm_file_name, const char * std_lib_file_name);
 #endif

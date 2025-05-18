@@ -23,7 +23,7 @@ int main(int argc, char ** argv)
 
     backend_ctx_t backend = backendInit(argv[1]);
 
-    makeAssemblyCode(&backend, argv[2]);
+    makeAssemblyCode(&backend, argv[2], "std_funcs.asm");
 
     backendDestroy(&backend);
 

@@ -31,6 +31,8 @@ static void emitStart(backend_ctx_t * ctx);
 
 static void emitExit(backend_ctx_t * ctx);
 
+static void emitStdFuncs(backend_ctx_t * ctx, const char * std_lib_file_name);
+
 
 static void translateCall(backend_ctx_t * ctx, node_t * node);
 
@@ -185,13 +187,20 @@ static name_addr_t * getNameAddr(backend_ctx_t * ctx, size_t var_index)
 }
 
 
-void makeAssemblyCode(backend_ctx_t * ctx, const char * asm_file_name)
+#define asm_emit(...) fprintf(ctx->asm_file, __VA_ARGS__)
+
+void makeAssemblyCode(backend_ctx_t * ctx, const char * asm_file_name, const char * std_lib_file_name)
 {
     assert(ctx);
     assert(asm_file_name);
+    assert(std_lib_file_name);
 
     ctx->asm_file = fopen(asm_file_name, "w");
     logPrint(LOG_DEBUG, "\nstarted translating to asm...\n");
+
+    asm_emit("global _start\n");
+
+    emitStdFuncs(ctx, std_lib_file_name);
 
     emitStart(ctx);
 
@@ -203,7 +212,22 @@ void makeAssemblyCode(backend_ctx_t * ctx, const char * asm_file_name)
     fclose(ctx->asm_file);
 }
 
-#define asm_emit(...) fprintf(ctx->asm_file, __VA_ARGS__)
+
+static void emitStdFuncs(backend_ctx_t * ctx, const char * std_lib_file_name)
+{
+    FILE * std_lib = fopen(std_lib_file_name, "r");
+
+    fseek(std_lib, 0, SEEK_END);
+    size_t file_size = ftell(std_lib);
+    fseek(std_lib, 0, SEEK_SET);
+
+    char * buffer = (char *)calloc(file_size, sizeof(char));
+    fread(buffer, sizeof(char), file_size, std_lib);
+    fwrite(buffer, sizeof(char), file_size, ctx->asm_file);
+
+    free(buffer);
+    fclose(std_lib);
+}
 
 
 static void emitStart(backend_ctx_t * ctx)
