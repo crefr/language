@@ -17,7 +17,7 @@ static void makeIRrecursive(backend_ctx_t * be, node_t * cur_node);
 static void IRresolveLabels(backend_ctx_t * ctx);
 
 
-static name_addr_t * getNameAddr(backend_ctx_t * ctx, size_t var_index);
+static name_addr_t getNameAddr(backend_ctx_t * ctx, size_t var_index);
 
 static void addNewName(backend_ctx_t * ctx, size_t var_index, int64_t addr, bool is_global);
 
@@ -59,7 +59,11 @@ static void translateOut(backend_ctx_t * ctx, node_t * node);
 
 static void translateAddSubMulDiv(backend_ctx_t * ctx, node_t * node);
 
+static void translateSqrt(backend_ctx_t * ctx, node_t * node);
+
 static void translateFuncDecl(backend_ctx_t * ctx, node_t * node);
+
+static void translateCompare(backend_ctx_t * ctx, node_t * node);
 
 
 backend_ctx_t backendInit(const char * ast_file_name)
@@ -135,6 +139,7 @@ static void addNewName(backend_ctx_t * ctx, size_t var_index, int64_t addr, bool
         ctx->local_var_counter++;
 }
 
+
 static void enterScope(backend_ctx_t * ctx, enum scope_start scope)
 {
     nameStackPush(ctx, scope, 0, 0);
@@ -148,46 +153,72 @@ static void leaveScope(backend_ctx_t * ctx, enum scope_start scope)
     name_addr_t * elems = ctx->name_stack.elems;
 
     size_t elem_index = ctx->name_stack.size - 1;
-    for ( ; elems[elem_index].name_index != scope; elem_index--)
-        ;
+
+    if (elems[elem_index].name_index == scope)
+        elem_index--;
+    else
+        for ( ; elems[elem_index].name_index != scope; elem_index--)
+            ;
 
     ctx->name_stack.size = elem_index;
 }
 
 
-static name_addr_t * getNameAddr(backend_ctx_t * ctx, size_t var_index)
+static name_addr_t getNameAddr(backend_ctx_t * ctx, size_t var_id)
 {
     assert(ctx);
-    assert(ctx->name_stack.size != 0);
+    assert(ctx->name_stack.size > 0);
+
+    for (size_t stack_index = 0; stack_index < ctx->name_stack.size; stack_index++){
+        int64_t cur_id = ctx->name_stack.elems[stack_index].name_index;
+        if (cur_id >= 0)
+            logPrint(LOG_DEBUG_PLUS, "[%s ", ctx->id_table[cur_id].name);
+        else
+            logPrint(LOG_DEBUG_PLUS, "[-_- ");
+
+        logPrint(LOG_DEBUG_PLUS, "%ld] ", cur_id);
+    }
+    logPrint(LOG_DEBUG_PLUS, "\n");
 
     name_addr_t * name_stack_elems = ctx->name_stack.elems;
     int64_t cur_name_index = 0;
 
-    size_t search_index = ctx->name_stack.size;
-    logPrint(LOG_DEBUG_PLUS, "search_index = %zu\n", search_index);
+    size_t search_index = ctx->name_stack.size - 1;
+    logPrint(LOG_DEBUG_PLUS, "searching idx %zu\n", var_id);
+    logPrint(LOG_DEBUG_PLUS, "start search_index = %zu\n", search_index);
 
     if (ctx->in_function){
+        logPrint(LOG_DEBUG_PLUS, "searching locally\n");
         while ((cur_name_index = name_stack_elems[search_index].name_index) != START_OF_FUNC_SCOPE){
-            search_index--;
+            if (cur_name_index == var_id){
+                logPrint(LOG_DEBUG_PLUS, "Found! search_idx = %zu, name_index = %ld\n", search_index, cur_name_index);
+                return name_stack_elems[search_index];
+            }
 
-            if (cur_name_index == var_index)
-                return name_stack_elems + search_index + 1;
+            search_index--;
         }
     }
+
+    logPrint(LOG_DEBUG_PLUS, "middle search_index = %zu\n", search_index);
+    search_index++;
 
     while(search_index > 0){
         search_index--;
 
         cur_name_index = name_stack_elems[search_index].name_index;
 
-        if (cur_name_index == var_index)
-            return name_stack_elems + search_index;
+        if (cur_name_index == var_id){
+            logPrint(LOG_DEBUG_PLUS, "Found! search_idx = %zu, name_index = %ld\n", search_index, cur_name_index);
+            return name_stack_elems[search_index];
+        }
     }
 
     fprintf(stderr, "X64 BACKEND: ERROR: variable %s is not declared in this scope!\n",
-        ctx->id_table[var_index].name);
+        ctx->id_table[var_id].name);
 
-    return NULL;
+    name_addr_t zero = {};
+
+    return zero;
 }
 
 
@@ -315,8 +346,16 @@ static void translateExpression(backend_ctx_t * ctx, node_t * node)
             translateAddSubMulDiv(ctx, node);
             break;
 
+        case EQUAL: case N_EQUAL: case LESS: case LESS_EQ: case GREATER: case GREATER_EQ:
+            translateCompare(ctx, node);
+            break;
+
         case CALL:
             translateCall(ctx, node);
+            break;
+
+        case SQRT:
+            translateSqrt(ctx, node);
             break;
 
         default:
@@ -338,7 +377,7 @@ static void translatePushVar(backend_ctx_t * ctx, size_t var_index)
 {
     logPrint(LOG_DEBUG_PLUS, "%s\n", __PRETTY_FUNCTION__);
 
-    name_addr_t * var_addr = getNameAddr(ctx, var_index);
+    name_addr_t var_addr = getNameAddr(ctx, var_index);
     IRnextBlock(ctx, IR_PUSH_MEM)->var = var_addr;
 }
 
@@ -346,7 +385,7 @@ static void translatePopVar(backend_ctx_t * ctx, size_t var_index)
 {
     logPrint(LOG_DEBUG_PLUS, "%s\n", __PRETTY_FUNCTION__);
 
-    name_addr_t * var_addr = getNameAddr(ctx, var_index);
+    name_addr_t var_addr = getNameAddr(ctx, var_index);
     IRnextBlock(ctx, IR_POP_MEM)->var = var_addr;
 }
 
@@ -366,6 +405,15 @@ static void translateAddSubMulDiv(backend_ctx_t * ctx, node_t * node)
         case MUL: IRnextBlock(ctx, IR_MUL); break;
         case DIV: IRnextBlock(ctx, IR_DIV); break;
     }
+}
+
+static void translateSqrt(backend_ctx_t * ctx, node_t * node)
+{
+    logPrint(LOG_DEBUG_PLUS, "%s\n", __PRETTY_FUNCTION__);
+
+    translateExpression(ctx, node->left);
+
+    IRnextBlock(ctx, IR_SQRT);
 }
 
 
@@ -407,13 +455,13 @@ static void translateVarDecl(backend_ctx_t * ctx, node_t * node)
         (- ctx->local_var_counter  * 8 - 8):
         (- ctx->global_var_counter * 8);
 
-    printf("name = %s, addr = %ld\n", ctx->id_table[node->left->val.id].name, addr);
+    printf("name = %s, addr = %ld, global = %d\n", ctx->id_table[node->left->val.id].name, addr, !(ctx->in_function));
 
     size_t var_index = node->left->val.id;
     addNewName(ctx, var_index, addr, !(ctx->in_function));
 
-    IR_block_t * next_block = IRnextBlock(ctx, IR_VAR_DECL);
-    next_block->var  = getNameAddr(ctx, var_index);
+    IR_block_t * var_block = IRnextBlock(ctx, IR_VAR_DECL);
+    var_block->var  = getNameAddr(ctx, var_index);
 }
 
 
@@ -444,6 +492,9 @@ static void translateIfElse(backend_ctx_t * ctx, node_t * node)
 
     enterScope(ctx, START_OF_SCOPE);
 
+    size_t if_counter = ctx->if_counter;
+    ctx->if_counter++;
+
     if (node->right->type == OPR && node->right->val.op == IF_ELSE){
         // we have else
         node_t * if_else_node = node->right;
@@ -452,19 +503,19 @@ static void translateIfElse(backend_ctx_t * ctx, node_t * node)
         IR_block_t * else_cond_jmp = IRnextBlock(ctx, IR_COND_JMP);
 
         // if body
-        makeIRrecursive(ctx, if_else_node->right);
+        makeIRrecursive(ctx, if_else_node->left);
 
         // jump over else
         IR_block_t * jmp_over_else = IRnextBlock(ctx, IR_JMP);
 
         // else label
-        else_cond_jmp->label_block_idx = IRnewLabel(ctx, "__IF_%zu_ELSE", ctx->if_counter);
+        else_cond_jmp->label_block_idx = IRnewLabel(ctx, "__IF_%zu_ELSE", if_counter);
 
         // else body
-        makeIRrecursive(ctx, if_else_node->left);
+        makeIRrecursive(ctx, if_else_node->right);
 
         // end label
-        jmp_over_else->label_block_idx = IRnewLabel(ctx, "__IF_%zu_END", ctx->if_counter);
+        jmp_over_else->label_block_idx = IRnewLabel(ctx, "__IF_%zu_END", if_counter);
     }
     else {
         // we do not have else
@@ -475,11 +526,10 @@ static void translateIfElse(backend_ctx_t * ctx, node_t * node)
         makeIRrecursive(ctx, node->right);
 
         // end label
-        end_cond_jmp->label_block_idx = IRnewLabel(ctx, "__IF_%zu_END", ctx->if_counter);
+        end_cond_jmp->label_block_idx = IRnewLabel(ctx, "__IF_%zu_END", if_counter);
     }
 
     leaveScope(ctx, START_OF_SCOPE);
-    ctx->if_counter++;
 }
 
 
@@ -494,6 +544,9 @@ static void translateWhile(backend_ctx_t * ctx, node_t * node)
     translateExpression(ctx, node->left);
 
     enterScope(ctx, START_OF_SCOPE);
+
+    size_t while_counter = ctx->while_counter;
+    ctx->while_counter++;
 
     // cond jump block
     IR_block_t * cond_jmp_to_end = IRnextBlock(ctx, IR_COND_JMP);
@@ -514,8 +567,6 @@ static void translateWhile(backend_ctx_t * ctx, node_t * node)
 }
 
 
-static void translateFuncDeclHandleArgs(backend_ctx_t * ctx, node_t * node, int64_t addr);
-
 static void translateFuncDecl(backend_ctx_t * ctx, node_t * node)
 {
     logPrint(LOG_DEBUG_PLUS, "%s\n", __PRETTY_FUNCTION__);
@@ -524,15 +575,21 @@ static void translateFuncDecl(backend_ctx_t * ctx, node_t * node)
     node_t * func_body = node->right;
 
     node_t * func_node = func_head->left;
-    node_t * func_args = func_head->right;
+    node_t * func_arg  = func_head->right;
 
     const char * func_name = ctx->id_table[func_node->val.id].name;
 
     size_t num_of_args = ctx->id_table[func_node->val.id].num_of_args;
-    translateFuncDeclHandleArgs(ctx, func_args, num_of_args * 8 + 8);
 
     enterScope(ctx, START_OF_FUNC_SCOPE);
     ctx->in_function = true;
+
+    for (size_t arg_index = 0; arg_index < num_of_args; arg_index++){
+        nameStackPush(ctx, func_arg->left->val.id, arg_index * 8 + 8, false);
+
+        func_arg = func_arg->right;
+    }
+
 
     // jump over function
     IR_block_t * jmp_over_func = IRnextBlock(ctx, IR_JMP);
@@ -557,23 +614,12 @@ static void translateFuncDecl(backend_ctx_t * ctx, node_t * node)
     ctx->local_var_counter = 0;
 }
 
-static void translateFuncDeclHandleArgs(backend_ctx_t * ctx, node_t * node, int64_t addr)
-{
-    logPrint(LOG_DEBUG_PLUS, "%s\n", __PRETTY_FUNCTION__);
-
-    if (node == NULL)
-        return;
-
-    translateFuncDeclHandleArgs(ctx, node->right, addr + 8);
-    nameStackPush(ctx, node->left->val.id, addr, false);
-}
-
 
 static void translateIn(backend_ctx_t * ctx, node_t * node)
 {
     logPrint(LOG_DEBUG_PLUS, "%s\n", __PRETTY_FUNCTION__);
 
-    name_addr_t * var_addr = getNameAddr(ctx, node->left->val.id);
+    name_addr_t var_addr = getNameAddr(ctx, node->left->val.id);
 
     IRnextBlock(ctx, IR_IN)->var = var_addr;
 }
@@ -589,3 +635,20 @@ static void translateOut(backend_ctx_t * ctx, node_t * node)
     IRnextBlock(ctx, IR_OUT);
 }
 
+
+static void translateCompare(backend_ctx_t * ctx, node_t * node)
+{
+    logPrint(LOG_DEBUG_PLUS, "%s\n", __PRETTY_FUNCTION__);
+
+    translateExpression(ctx, node->left);
+    translateExpression(ctx, node->right);
+
+    switch (node->val.op){
+        case EQUAL:      IRnextBlock(ctx, IR_EQUAL); break;
+        case N_EQUAL:    IRnextBlock(ctx, IR_N_EQUAL); break;
+        case LESS:       IRnextBlock(ctx, IR_LESS); break;
+        case GREATER:    IRnextBlock(ctx, IR_GREATER); break;
+        case LESS_EQ:    IRnextBlock(ctx, IR_LESS_EQ); break;
+        case GREATER_EQ: IRnextBlock(ctx, IR_GREATER_EQ); break;
+    }
+}

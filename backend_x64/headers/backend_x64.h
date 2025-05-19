@@ -49,6 +49,15 @@ enum IR_type {
 
     IR_OUT        = 15,
     IR_IN         = 16,
+
+    IR_SQRT       = 17,
+
+    IR_GREATER    = 18,
+    IR_LESS       = 19,
+    IR_GREATER_EQ = 20,
+    IR_LESS_EQ    = 21,
+    IR_EQUAL      = 22,
+    IR_N_EQUAL    = 23
 };
 
 
@@ -59,7 +68,7 @@ typedef struct {
 
     union {
         size_t label_block_idx;     //< for jumps and calls
-        name_addr_t * var;          //< for commands that work with vars
+        name_addr_t var;          //< for commands that work with vars
         int64_t imm_val;            //< for push_imm
 
         char label_name[MAX_LABEL_NAME_LEN];    //< for labels

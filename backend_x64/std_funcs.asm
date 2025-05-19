@@ -99,7 +99,7 @@ __out_standard_func_please_do_not_name_your_funcs_this_name__:
 
         mov rax, [rbp + 16]         ; rax = first arg
 
-        mov r8, QWORD 0x7000000000000000
+        mov r8, QWORD 0x8000000000000000
         xor rcx, rcx
 
         test rax, r8

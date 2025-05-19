@@ -46,6 +46,10 @@ static void compileIn(backend_ctx_t * ctx, IR_block_t * block);
 
 static void compileOut(backend_ctx_t * ctx, IR_block_t * block);
 
+static void compileSqrt(backend_ctx_t * ctx, IR_block_t * block);
+
+static void compileCmp(backend_ctx_t * ctx, IR_block_t * block);
+
 
 
 void compileFromIR(backend_ctx_t * ctx, const char * asm_file_name, const char * std_lib_file_name)
@@ -70,6 +74,9 @@ void compileFromIR(backend_ctx_t * ctx, const char * asm_file_name, const char *
             case IR_ADD: case IR_SUB: case IR_MUL: case IR_DIV:
                 compileAddSubMulDiv(ctx, block); break;
 
+            case IR_EQUAL: case IR_N_EQUAL: case IR_LESS: case IR_LESS_EQ: case IR_GREATER: case IR_GREATER_EQ:
+                compileCmp(ctx, block); break;
+
             case IR_CALL: compileCall(ctx, block); break;
 
             case IR_RET: compileReturn(ctx, block); break;
@@ -93,6 +100,8 @@ void compileFromIR(backend_ctx_t * ctx, const char * asm_file_name, const char *
             case IR_IN: compileIn(ctx, block); break;
 
             case IR_OUT: compileOut(ctx, block); break;
+
+            case IR_SQRT: compileSqrt(ctx, block); break;
         }
     }
 
@@ -191,30 +200,30 @@ static void compilePushImm(backend_ctx_t * ctx, IR_block_t * block)
 
 static void compilePushMem(backend_ctx_t * ctx, IR_block_t * block)
 {
-    if (block->var->is_global)
-        asm_emit("push QWORD [rbx+(%ld)]\t", block->var->rel_addr);
+    if (block->var.is_global)
+        asm_emit("push QWORD [rbx+(%ld)]\t", block->var.rel_addr);
     else
-        asm_emit("push QWORD [rbp+(%ld)]\t", block->var->rel_addr);
+        asm_emit("push QWORD [rbp+(%ld)]\t", block->var.rel_addr);
 
-    asm_emit_comment("%s\n", ctx->id_table[block->var->name_index].name);
+    asm_emit_comment("%s\n", ctx->id_table[block->var.name_index].name);
 }
 
 
 static void compilePopVar(backend_ctx_t * ctx, IR_block_t * block)
 {
-    if (block->var->is_global)
-        asm_emit("pop QWORD [rbx+(%ld)] \t", block->var->rel_addr);
+    if (block->var.is_global)
+        asm_emit("pop QWORD [rbx+(%ld)] \t", block->var.rel_addr);
     else
-        asm_emit("pop QWORD [rbp+(%ld)] \t", block->var->rel_addr);
+        asm_emit("pop QWORD [rbp+(%ld)] \t", block->var.rel_addr);
 
-    asm_emit_comment("%s\n", ctx->id_table[block->var->name_index].name);
+    asm_emit_comment("%s\n", ctx->id_table[block->var.name_index].name);
 }
 
 
 static void compileVarDecl(backend_ctx_t * ctx, IR_block_t * block)
 {
     asm_emit("sub rsp, 8\t\t\t\t");
-    asm_emit_comment("%s\n", ctx->id_table[block->var->name_index].name);
+    asm_emit_comment("%s\n", ctx->id_table[block->var.name_index].name);
 }
 
 
@@ -285,10 +294,10 @@ static void compileIn(backend_ctx_t * ctx, IR_block_t * block)
 
     asm_emit("call __in_standard_func_please_do_not_name_your_funcs_this_name__\n");
 
-    if (block->var->is_global)
-        asm_emit("mov [rbx + (%ld)], rax\n", block->var->rel_addr);
+    if (block->var.is_global)
+        asm_emit("mov [rbx + (%ld)], rax\n", block->var.rel_addr);
     else
-        asm_emit("mov [rbp + (%ld)], rax\n", block->var->rel_addr);
+        asm_emit("mov [rbp + (%ld)], rax\n", block->var.rel_addr);
 
     asm_end_of_block();
 }
@@ -300,5 +309,47 @@ static void compileOut(backend_ctx_t * ctx, IR_block_t * block)
 
     asm_emit("call __out_standard_func_please_do_not_name_your_funcs_this_name__\n");
     asm_emit("add rsp, 8\n");
+    asm_end_of_block();
+}
+
+
+static void compileSqrt(backend_ctx_t * ctx, IR_block_t * block)
+{
+    asm_emit_comment("\t--- SQRT ---\n");
+
+    asm_emit("pop rax\n");
+    asm_emit("cvtsi2sd xmm0, rax\n");
+
+    asm_emit("sqrtsd xmm0, xmm0\n");
+
+    asm_emit("cvtsd2si rax, xmm0\n");
+    asm_emit("push rax\n");
+
+    asm_end_of_block();
+}
+
+
+static void compileCmp(backend_ctx_t * ctx, IR_block_t * block)
+{
+    asm_emit_comment("\t--- < <= > >= == ---\n");
+
+    asm_emit("xor rdx, rdx\n");
+
+    asm_emit("pop rcx\n");
+    asm_emit("pop rax\n");
+
+    asm_emit("cmp rax, rcx\n");
+
+    switch (block->type){
+        case IR_EQUAL:      asm_emit("sete  dl\n"); break;
+        case IR_N_EQUAL:    asm_emit("setne dl\n"); break;
+        case IR_LESS:       asm_emit("setl  dl\n"); break;
+        case IR_LESS_EQ:    asm_emit("setle dl\n"); break;
+        case IR_GREATER:    asm_emit("setg  dl\n"); break;
+        case IR_GREATER_EQ: asm_emit("setge dl\n"); break;
+    }
+
+    asm_emit("push rdx\n");
+
     asm_end_of_block();
 }
