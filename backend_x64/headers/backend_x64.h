@@ -42,7 +42,13 @@ enum IR_type {
     IR_LABEL      = 10,
 
     IR_PUSH_IMM   = 11,
-    IR_PUSH_MEM   = 12
+    IR_PUSH_MEM   = 12,
+    IR_POP_MEM    = 13,
+
+    IR_VAR_DECL   = 14,
+
+    IR_OUT        = 15,
+    IR_IN         = 16,
 };
 
 
@@ -58,8 +64,12 @@ typedef struct {
 
         char label_name[MAX_LABEL_NAME_LEN];    //< for labels
     };
+
+    size_t name_id;
     size_t arg_num;                 //< for funcs
 } IR_block_t;
+
+const size_t IR_START_CAP = 1024;
 
 typedef struct {
     IR_block_t * blocks;
@@ -91,5 +101,7 @@ backend_ctx_t backendInit(const char * ast_file_name);
 
 void backendDestroy(backend_ctx_t * ctx);
 
-void makeAssemblyCode(backend_ctx_t * ctx, const char * asm_file_name, const char * std_lib_file_name);
+void makeIR(backend_ctx_t * ctx);
+
+
 #endif

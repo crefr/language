@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "x64_compile.h"
 #include "backend_x64.h"
 #include "logger.h"
 
@@ -23,7 +24,8 @@ int main(int argc, char ** argv)
 
     backend_ctx_t backend = backendInit(argv[1]);
 
-    makeAssemblyCode(&backend, argv[2], "std_funcs.asm");
+    makeIR(&backend);
+    compileFromIR(&backend, argv[2], "std_funcs.asm");
 
     backendDestroy(&backend);
 

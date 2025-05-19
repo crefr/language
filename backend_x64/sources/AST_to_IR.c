@@ -9,101 +9,6 @@
 #include "IR_handler.h"
 
 
-const size_t MAX_NODES_NUM = 1024;
-
-
-static void makeIRrecursive(backend_ctx_t * be, node_t * cur_node);
-
-static void IRresolveLabels(backend_ctx_t * ctx);
-
-
-static name_addr_t * getNameAddr(backend_ctx_t * ctx, size_t var_index);
-
-static void addNewName(backend_ctx_t * ctx, size_t var_index, int64_t addr, bool is_global);
-
-static void nameStackPush(backend_ctx_t * ctx, size_t var_index, int64_t addr, bool is_global);
-
-
-static void enterScope(backend_ctx_t * ctx, enum scope_start scope);
-
-static void leaveScope(backend_ctx_t * ctx, enum scope_start scope);
-
-
-/************** TRANSLATORS **************/
-
-static void translateCall(backend_ctx_t * ctx, node_t * node);
-
-static void translateVarDecl(backend_ctx_t * ctx, node_t * node);
-
-static void translatePushNum(backend_ctx_t * ctx, int64_t num);
-
-static void translatePushVar(backend_ctx_t * ctx, size_t var_index);
-
-static void translatePopVar(backend_ctx_t * ctx, size_t var_index);
-
-static void translateCall(backend_ctx_t * ctx, node_t * node);
-
-static void translateVarDecl(backend_ctx_t * ctx, node_t * node);
-
-static void translateAssign(backend_ctx_t * ctx, node_t * node);
-
-static void translateReturn(backend_ctx_t * ctx, node_t * node);
-
-static void translateIfElse(backend_ctx_t * ctx, node_t * node);
-
-static void translateWhile(backend_ctx_t * ctx, node_t * node);
-
-static void translateIn(backend_ctx_t * ctx, node_t * node);
-
-static void translateOut(backend_ctx_t * ctx, node_t * node);
-
-static void translateAddSubMulDiv(backend_ctx_t * ctx, node_t * node);
-
-static void translateFuncDecl(backend_ctx_t * ctx, node_t * node);
-
-
-backend_ctx_t backendInit(const char * ast_file_name)
-{
-    assert(ast_file_name);
-
-    backend_ctx_t ctx = {};
-    ctx.root = (node_t *)calloc(MAX_NODES_NUM, sizeof(node_t));
-
-    tree_context_t tree = {};
-    tree.cur_node = ctx.root;
-
-    ctx.root = readTreeFromIR(&tree, ast_file_name);
-    ctx.id_table_size = tree.id_size;
-    ctx.id_table      = tree.ids;
-
-    ctx.name_stack.elems = (name_addr_t *)calloc(NAME_STACK_START_CAP, sizeof(name_addr_t));
-    ctx.name_stack.capacity = NAME_STACK_START_CAP;
-    ctx.name_stack.size     = 0;
-
-    ctx.in_function = false;
-
-    return ctx;
-}
-
-
-void backendDestroy(backend_ctx_t * ctx)
-{
-    assert(ctx);
-
-    free(ctx->id_table);
-    free(ctx->root);
-
-    ctx->id_table = NULL;
-    ctx->root     = NULL;
-
-    free(ctx->name_stack.elems);
-    ctx->name_stack.elems = NULL;
-
-    free(ctx->IR.blocks);
-    ctx->IR.blocks = NULL;
-}
-
-
 static void nameStackPush(backend_ctx_t * ctx, size_t var_index, int64_t addr, bool is_global)
 {
     if (addr > 0)
@@ -123,7 +28,6 @@ static void nameStackPush(backend_ctx_t * ctx, size_t var_index, int64_t addr, b
         ctx->name_stack.elems = (name_addr_t *)realloc(ctx->name_stack.elems, ctx->name_stack.capacity * sizeof(name_addr_t));
     }
 }
-
 
 static void addNewName(backend_ctx_t * ctx, size_t var_index, int64_t addr, bool is_global)
 {
@@ -195,20 +99,20 @@ static IR_block_t * IRnextBlock(backend_ctx_t * ctx, enum IR_type type)
 {
     if (ctx->IR.size >= ctx->IR.capacity){
         ctx->IR.capacity *= 2;
-        ctx->IR.blocks = (IR_block_t *)realloc(ctx->IR.blocks, ctx->IR.capacity * sizeof(*(ctx->IR.blocks)));
+        ctx->IR.blocks = (IR_block_t *)realloc(ctx->IR.capacity, sizeof(*(ctx->IR.blocks)));
     }
-    size_t cur_index = ctx->IR.size;
+
     ctx->IR.size++;
+    ctx->IR.blocks[ctx->IR.size].type = type;
 
-    ctx->IR.blocks[cur_index].type = type;
-
-    return ctx->IR.blocks + cur_index;
+    return ctx->IR.blocks + ctx->IR.size;
 }
 
 
 static size_t IRnewLabel(backend_ctx_t * ctx, const char * fmt, ...)
 {
-    IR_block_t * label_block = IRnextBlock(ctx, IR_LABEL);
+    IR_block_t * label_block = IRnextBlock(ctx);
+    label_block->type = IR_LABEL;
 
     va_list args;
     va_start(args, fmt);
@@ -229,9 +133,7 @@ void makeIR(backend_ctx_t * ctx)
     ctx->IR.capacity = IR_START_CAP;
     ctx->IR.size = 0;
 
-    makeIRrecursive(ctx, ctx->root);
-
-    IRresolveLabels(ctx);
+    makeAssemblyIRrecursive(ctx, ctx->root);
 }
 
 
@@ -272,20 +174,6 @@ static void makeIRrecursive(backend_ctx_t * ctx, node_t * node)
             break;
     }
 }
-
-
-static void IRresolveLabels(backend_ctx_t * ctx)
-{
-    for (size_t IR_index = 0; IR_index < ctx->IR.size; IR_index++){
-        IR_block_t * block = ctx->IR.blocks + IR_index;
-
-        if (block->type == IR_CALL){
-            size_t func_index = ctx->id_table[block->name_id].IR_index;
-            block->label_block_idx = func_index;
-        }
-    }
-}
-
 
 
 // NOTE: expressions are blocks that return something in stack
@@ -383,7 +271,7 @@ static void translateCall(backend_ctx_t * ctx, node_t * node)
 
     translateCallHandleArgs(ctx, arg_tree);
 
-    IRnextBlock(ctx, IR_CALL)->name_id = func_node->val.id;
+    IRnextBlock(ctx, IR_CALL);
     //!!! label_block_idx field must be set later!!!
 }
 
@@ -430,7 +318,6 @@ static void translateReturn(backend_ctx_t * ctx, node_t * node)
 {
     logPrint(LOG_DEBUG_PLUS, "%s\n", __PRETTY_FUNCTION__);
 
-    translateExpression(ctx, node->left);
     (void)IRnextBlock(ctx, IR_RET);
 }
 
@@ -449,13 +336,15 @@ static void translateIfElse(backend_ctx_t * ctx, node_t * node)
         node_t * if_else_node = node->right;
 
         // condition
-        IR_block_t * else_cond_jmp = IRnextBlock(ctx, IR_COND_JMP);
+        IR_block_t * else_cond_jmp = IRnextBlock(ctx);
+        else_cond_jmp->type = IR_COND_JMP;
 
         // if body
         makeIRrecursive(ctx, if_else_node->right);
 
         // jump over else
-        IR_block_t * jmp_over_else = IRnextBlock(ctx, IR_JMP);
+        IR_block_t * jmp_over_else = IRnextBlock(ctx);
+        jmp_over_else->type = IR_JMP;
 
         // else label
         else_cond_jmp->label_block_idx = IRnewLabel(ctx, "__IF_%zu_ELSE", ctx->if_counter);
@@ -464,18 +353,19 @@ static void translateIfElse(backend_ctx_t * ctx, node_t * node)
         makeIRrecursive(ctx, if_else_node->left);
 
         // end label
-        jmp_over_else->label_block_idx = IRnewLabel(ctx, "__IF_%zu_END", ctx->if_counter);
+        jmp_over_else->label_block_idx = IRnewLabel(ctx, "__IF_%zu_END:", ctx->if_counter);
     }
     else {
         // we do not have else
 
         // condition
-        IR_block_t * end_cond_jmp = IRnextBlock(ctx, IR_COND_JMP);
+        IR_block_t * end_cond_jmp = IRnextBlock(ctx);
+        end_cond_jmp->type = IR_COND_JMP;
 
         makeIRrecursive(ctx, node->right);
 
         // end label
-        end_cond_jmp->label_block_idx = IRnewLabel(ctx, "__IF_%zu_END", ctx->if_counter);
+        end_cond_jmp->label_block_idx = IRnewLabel(ctx, "__IF_%zu_END:", ctx->if_counter);
     }
 
     leaveScope(ctx, START_OF_SCOPE);
@@ -506,7 +396,7 @@ static void translateWhile(backend_ctx_t * ctx, node_t * node)
     jmp_to_cond_check->label_block_idx = cond_check_label_idx;
 
     // end label
-    size_t end_label_idx = IRnewLabel(ctx, "__WHILE_%zu_END\n", ctx->while_counter);
+    size_t end_label_idx = IRnewLabel(ctx, "__WHILE_%zu_END:\n", ctx->while_counter);
     cond_jmp_to_end->label_block_idx = end_label_idx;
 
     leaveScope(ctx, START_OF_SCOPE);
@@ -537,12 +427,6 @@ static void translateFuncDecl(backend_ctx_t * ctx, node_t * node)
     // jump over function
     IR_block_t * jmp_over_func = IRnextBlock(ctx, IR_JMP);
 
-    // label index of the function
-    size_t func_label_idx = IRnewLabel(ctx, "%s", func_name);
-    ctx->id_table[func_node->val.id].IR_index = func_label_idx; //into the table
-    ctx->IR.blocks[func_label_idx].arg_num = num_of_args;
-
-
     // setting frame pointer
     IRnextBlock(ctx, IR_SET_FR_PTR);
 
@@ -550,7 +434,7 @@ static void translateFuncDecl(backend_ctx_t * ctx, node_t * node)
     makeIRrecursive(ctx, func_body);
 
     // end label
-    jmp_over_func->label_block_idx = IRnewLabel(ctx, "__END_OF_%s__", func_name);
+    jmp_over_func->label_block_idx = IRnewLabel(ctx, "__END_OF_%s__:\n", func_name);
 
     leaveScope(ctx, START_OF_FUNC_SCOPE);
     ctx->in_function = false;

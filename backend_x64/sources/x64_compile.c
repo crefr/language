@@ -3,6 +3,7 @@
 #include <assert.h>
 
 #include "backend_x64.h"
+#include "logger.h"
 
 #define asm_emit(...)         fprintf(ctx->asm_file, "\t\t" __VA_ARGS__)
 #define asm_emit_label(...)   fprintf(ctx->asm_file, __VA_ARGS__)
@@ -40,6 +41,11 @@ static void compilePushImm(backend_ctx_t * ctx, IR_block_t * block);
 static void compilePushMem(backend_ctx_t * ctx, IR_block_t * block);
 
 static void compilePopVar(backend_ctx_t * ctx, IR_block_t * block);
+
+static void compileIn(backend_ctx_t * ctx, IR_block_t * block);
+
+static void compileOut(backend_ctx_t * ctx, IR_block_t * block);
+
 
 
 void compileFromIR(backend_ctx_t * ctx, const char * asm_file_name, const char * std_lib_file_name)
@@ -79,6 +85,14 @@ void compileFromIR(backend_ctx_t * ctx, const char * asm_file_name, const char *
             case IR_PUSH_MEM: compilePushMem(ctx, block); break;
 
             case IR_SET_FR_PTR: compileSetFrPtr(ctx, block); break;
+
+            case IR_VAR_DECL: compileVarDecl(ctx, block); break;
+
+            case IR_POP_MEM: compilePopVar(ctx, block); break;
+
+            case IR_IN: compileIn(ctx, block); break;
+
+            case IR_OUT: compileOut(ctx, block); break;
         }
     }
 
@@ -133,8 +147,8 @@ static void emitExit(backend_ctx_t * ctx)
 
 static void compileSetFrPtr(backend_ctx_t * ctx, IR_block_t * block)
 {
-    asm_emit("push rbp");
-    asm_emit("mov rbp, rsp");
+    asm_emit("push rbp\n");
+    asm_emit("mov rbp, rsp\n");
 
     asm_end_of_block();
 }
@@ -156,7 +170,7 @@ static void compileCondJmp(backend_ctx_t * ctx, IR_block_t * block)
     asm_emit_comment("--- COND CHECK ---\n");
 
     asm_emit("pop rsi\n");
-    asm_emit("test rsi, rsi");
+    asm_emit("test rsi, rsi\n");
     asm_emit("jz %s\n", label_block->label_name);
 
     asm_end_of_block();
@@ -165,7 +179,7 @@ static void compileCondJmp(backend_ctx_t * ctx, IR_block_t * block)
 
 static void compileLabel(backend_ctx_t * ctx, IR_block_t * block)
 {
-    asm_emit_label("%s:\n", block->lable->name);
+    asm_emit_label("%s:\n", block->label_name);
 }
 
 
@@ -177,30 +191,30 @@ static void compilePushImm(backend_ctx_t * ctx, IR_block_t * block)
 
 static void compilePushMem(backend_ctx_t * ctx, IR_block_t * block)
 {
-    if (block->addr->is_global)
-        asm_emit("push QWORD [rbx+(%ld)]\t", block->addr->rel_addr);
+    if (block->var->is_global)
+        asm_emit("push QWORD [rbx+(%ld)]\t", block->var->rel_addr);
     else
-        asm_emit("push QWORD [rbp+(%ld)]\t", block->addr->rel_addr);
+        asm_emit("push QWORD [rbp+(%ld)]\t", block->var->rel_addr);
 
-    asm_emit_comment("%s\n", ctx->id_table[block->addr->name_index].name);
+    asm_emit_comment("%s\n", ctx->id_table[block->var->name_index].name);
 }
 
 
 static void compilePopVar(backend_ctx_t * ctx, IR_block_t * block)
 {
-    if (block->addr->is_global)
-        asm_emit("pop QWORD [rbx+(%ld)] \t", block->addr->rel_addr);
+    if (block->var->is_global)
+        asm_emit("pop QWORD [rbx+(%ld)] \t", block->var->rel_addr);
     else
-        asm_emit("pop QWORD [rbp+(%ld)] \t", block->addr->rel_addr);
+        asm_emit("pop QWORD [rbp+(%ld)] \t", block->var->rel_addr);
 
-    asm_emit_comment("%s\n", ctx->id_table[block->addr->name_index].name);
+    asm_emit_comment("%s\n", ctx->id_table[block->var->name_index].name);
 }
 
 
 static void compileVarDecl(backend_ctx_t * ctx, IR_block_t * block)
 {
     asm_emit("sub rsp, 8\t\t\t\t");
-    asm_emit_comment("%s\n", ctx->id_table[block->addr->name_index].name);
+    asm_emit_comment("%s\n", ctx->id_table[block->var->name_index].name);
 }
 
 
@@ -239,22 +253,22 @@ static void compileAddSubMulDiv(backend_ctx_t * ctx, IR_block_t * block)
 
 static void compileCall(backend_ctx_t * ctx, IR_block_t * block)
 {
-    asm_emit_comment("\t--- CALLING %s ---\n", func_name);
-
     IR_block_t * label_block = ctx->IR.blocks + block->label_block_idx;
 
+    asm_emit_comment("\t--- CALLING %s ---\n", label_block->label_name);
+
     asm_emit("call %s\n", label_block->label_name);
-    asm_emit("add %zu\n", label_block->arg_num * 8);
+    asm_emit("add rsp, %zu\n", label_block->arg_num * 8);
     asm_emit("push rax\n");
 
-    asm_emit_comment("\t--- END OF CALLING %s ---\n", func_name);
+    asm_emit_comment("\t--- END OF CALLING %s ---\n", label_block->label_name);
     asm_end_of_block();
 }
 
 
 static void compileReturn(backend_ctx_t * ctx, IR_block_t * block)
 {
-    asm_emit_comment("\t --- RETURN ---\n");
+    asm_emit_comment("\t--- RETURN ---\n");
 
     asm_emit("pop rax\n");
     asm_emit("mov rsp, rbp\n");
@@ -264,3 +278,27 @@ static void compileReturn(backend_ctx_t * ctx, IR_block_t * block)
     asm_end_of_block();
 }
 
+
+static void compileIn(backend_ctx_t * ctx, IR_block_t * block)
+{
+    asm_emit_comment("\t--- STANDARD IN CALLING ---\n");
+
+    asm_emit("call __in_standard_func_please_do_not_name_your_funcs_this_name__\n");
+
+    if (block->var->is_global)
+        asm_emit("mov [rbx + (%ld)], rax\n", block->var->rel_addr);
+    else
+        asm_emit("mov [rbp + (%ld)], rax\n", block->var->rel_addr);
+
+    asm_end_of_block();
+}
+
+
+static void compileOut(backend_ctx_t * ctx, IR_block_t * block)
+{
+    asm_emit_comment("\t--- STANDARD OUT CALLING ---\n");
+
+    asm_emit("call __out_standard_func_please_do_not_name_your_funcs_this_name__\n");
+    asm_emit("add rsp, 8\n");
+    asm_end_of_block();
+}
