@@ -27,10 +27,6 @@ static void leaveScope(backend_ctx_t * ctx, enum scope_start scope);
 
 
 /************** TRANSLATORS **************/
-#define asm_emit(...)         fprintf(ctx->asm_file, "\t\t" __VA_ARGS__)
-#define asm_emit_label(...)   fprintf(ctx->asm_file, __VA_ARGS__)
-#define asm_emit_comment(...) fprintf(ctx->asm_file, "; " __VA_ARGS__)
-#define asm_end_of_block()    fprintf(ctx->asm_file, "\n")
 
 
 static void emitStart(backend_ctx_t * ctx);
@@ -195,73 +191,18 @@ static name_addr_t * getNameAddr(backend_ctx_t * ctx, size_t var_index)
 }
 
 
-void makeAssemblyCode(backend_ctx_t * ctx, const char * asm_file_name, const char * std_lib_file_name)
+void makeIR(backend_ctx_t * ctx)
 {
     assert(ctx);
     assert(asm_file_name);
     assert(std_lib_file_name);
 
-    ctx->asm_file = fopen(asm_file_name, "w");
-    logPrint(LOG_DEBUG, "\nstarted translating to asm...\n");
-
-    fprintf(ctx->asm_file, "global _start\n");
-
-    emitStdFuncs(ctx, std_lib_file_name);
-
-    emitStart(ctx);
-
-    makeAssemblyCodeRecursive(ctx, ctx->root);
-
-    emitExit(ctx);
-
-    logPrint(LOG_DEBUG, "\nsuccessfully translated to asm!\n");
-    fclose(ctx->asm_file);
+    makeAssemblyIRrecursive(ctx, ctx->root);
 }
 
 
-static void emitStdFuncs(backend_ctx_t * ctx, const char * std_lib_file_name)
-{
-    FILE * std_lib = fopen(std_lib_file_name, "r");
 
-    fseek(std_lib, 0, SEEK_END);
-    size_t file_size = ftell(std_lib);
-    fseek(std_lib, 0, SEEK_SET);
-
-    char * buffer = (char *)calloc(file_size, sizeof(char));
-    fread(buffer, sizeof(char), file_size, std_lib);
-    fwrite(buffer, sizeof(char), file_size, ctx->asm_file);
-
-    free(buffer);
-    fclose(std_lib);
-}
-
-
-static void emitStart(backend_ctx_t * ctx)
-{
-    asm_emit_comment("===================== STARTING TRANSLATION =====================\n");
-
-
-    asm_emit_label("_start:\n");
-    asm_emit("mov rbx, rsp\n");
-
-    asm_end_of_block();
-}
-
-
-static void emitExit(backend_ctx_t * ctx)
-{
-    asm_emit_comment("\t--- EXITING ---\n");
-
-    asm_emit("mov rsp, rbx\n");
-
-    asm_emit("mov rax, 0x3c\n");
-    asm_emit("mov rdi, 0x00\n");
-
-    asm_emit("syscall\n");
-}
-
-
-static void makeAssemblyCodeRecursive(backend_ctx_t * ctx, node_t * node)
+static void makeIRrecursive(backend_ctx_t * ctx, node_t * node)
 {
     assert(ctx);
 
@@ -289,15 +230,14 @@ static void makeAssemblyCodeRecursive(backend_ctx_t * ctx, node_t * node)
         case       OUT: translateOut(ctx, node);        break;
 
         case SEP:
-            makeAssemblyCodeRecursive(ctx, node->left);
-            makeAssemblyCodeRecursive(ctx, node->right);
+            makeIRrecursive(ctx, node->left);
+            makeIRrecursive(ctx, node->right);
             break;
 
         default:
             fprintf(stderr, "X64 BACKEND: ERROR: invalid op_num: %d\n", op_num);
             break;
     }
-
 }
 
 

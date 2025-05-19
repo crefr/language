@@ -1,14 +1,9 @@
 #ifndef BACKEND_X64_INCLUDED
 #define BACKEND_X64_INCLUDED
 
+#include <stdint.h>
+
 #include "tree.h"
-
-
-/* x64 backend
-Global variables are on the stack (rbx is the start pointer
-
-
-*/
 
 // these constants MUST be negative, so they will not collide with real name_index
 enum scope_start {
@@ -30,6 +25,48 @@ typedef struct {
     size_t capacity;
 } name_stack_t;
 
+
+enum IR_type {
+    IR_ADD        = 0,
+    IR_SUB        = 1,
+    IR_MUL        = 2,
+    IR_DIV        = 3,
+
+    IR_SET_FR_PTR = 4,
+    IR_CALL       = 5,
+    IR_RET        = 6,
+
+    IR_COND_JMP   = 7,
+    IR_JMP        = 9,
+
+    IR_LABEL      = 10,
+
+    IR_PUSH_IMM   = 11,
+    IR_PUSH_MEM   = 12
+};
+
+
+const size_t MAX_LABEL_NAME_LEN = 64;
+
+typedef struct {
+    enum IR_type type;
+
+    union {
+        size_t label_block_idx;     //< for jumps and calls
+        name_addr_t * var;          //< for commands that work with vars
+        int64_t imm_val;            //< for push_imm
+
+        char label_name[MAX_LABEL_NAME_LEN];    //< for labels
+    };
+    size_t arg_num;                 //< for funcs
+} IR_block_t;
+
+typedef struct {
+    IR_block_t * blocks;
+    size_t capacity;
+    size_t size;
+} IR_context_t;
+
 typedef struct {
     node_t * root;
 
@@ -45,6 +82,8 @@ typedef struct {
 
     size_t if_counter;
     size_t while_counter;
+
+    IR_context_t IR;
 } backend_ctx_t;
 
 
