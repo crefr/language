@@ -27,12 +27,17 @@ static void leaveScope(backend_ctx_t * ctx, enum scope_start scope);
 
 
 /************** TRANSLATORS **************/
+#define asm_emit(...)         fprintf(ctx->asm_file, "\t\t" __VA_ARGS__)
+#define asm_emit_label(...)   fprintf(ctx->asm_file, __VA_ARGS__)
+#define asm_emit_comment(...) fprintf(ctx->asm_file, "; " __VA_ARGS__)
+#define asm_end_of_block()    fprintf(ctx->asm_file, "\n")
+
+
 static void emitStart(backend_ctx_t * ctx);
 
 static void emitExit(backend_ctx_t * ctx);
 
 static void emitStdFuncs(backend_ctx_t * ctx, const char * std_lib_file_name);
-
 
 static void translateCall(backend_ctx_t * ctx, node_t * node);
 
@@ -41,6 +46,8 @@ static void translateVarDecl(backend_ctx_t * ctx, node_t * node);
 static void translatePushNum(backend_ctx_t * ctx, int64_t num);
 
 static void translatePushVar(backend_ctx_t * ctx, size_t var_index);
+
+static void translatePopVar(backend_ctx_t * ctx, size_t var_index);
 
 static void translateCall(backend_ctx_t * ctx, node_t * node);
 
@@ -137,6 +144,7 @@ static void enterScope(backend_ctx_t * ctx, enum scope_start scope)
     nameStackPush(ctx, scope, 0, 0);
 }
 
+
 static void leaveScope(backend_ctx_t * ctx, enum scope_start scope)
 {
     assert(ctx->name_stack.size > 0);
@@ -187,8 +195,6 @@ static name_addr_t * getNameAddr(backend_ctx_t * ctx, size_t var_index)
 }
 
 
-#define asm_emit(...) fprintf(ctx->asm_file, __VA_ARGS__)
-
 void makeAssemblyCode(backend_ctx_t * ctx, const char * asm_file_name, const char * std_lib_file_name)
 {
     assert(ctx);
@@ -198,7 +204,7 @@ void makeAssemblyCode(backend_ctx_t * ctx, const char * asm_file_name, const cha
     ctx->asm_file = fopen(asm_file_name, "w");
     logPrint(LOG_DEBUG, "\nstarted translating to asm...\n");
 
-    asm_emit("global _start\n");
+    fprintf(ctx->asm_file, "global _start\n");
 
     emitStdFuncs(ctx, std_lib_file_name);
 
@@ -232,13 +238,20 @@ static void emitStdFuncs(backend_ctx_t * ctx, const char * std_lib_file_name)
 
 static void emitStart(backend_ctx_t * ctx)
 {
-    asm_emit("_start:\n");
+    asm_emit_comment("===================== STARTING TRANSLATION =====================\n");
+
+
+    asm_emit_label("_start:\n");
     asm_emit("mov rbx, rsp\n");
+
+    asm_end_of_block();
 }
 
 
 static void emitExit(backend_ctx_t * ctx)
 {
+    asm_emit_comment("\t--- EXITING ---\n");
+
     asm_emit("mov rsp, rbx\n");
 
     asm_emit("mov rax, 0x3c\n");
@@ -338,15 +351,26 @@ static void translatePushVar(backend_ctx_t * ctx, size_t var_index)
 {
     logPrint(LOG_DEBUG_PLUS, "%s\n", __PRETTY_FUNCTION__);
 
-    // assert(ctx->id_table[var_index].type == VAR);
+    name_addr_t * addr = getNameAddr(ctx, var_index);
+    if (addr->is_global)
+        asm_emit("push QWORD [rbx+(%ld)]\t", addr->rel_addr);
+    else
+        asm_emit("push QWORD [rbp+(%ld)]\t", addr->rel_addr);
+
+    asm_emit_comment("%s\n", ctx->id_table[var_index].name);
+}
+
+static void translatePopVar(backend_ctx_t * ctx, size_t var_index)
+{
+    logPrint(LOG_DEBUG_PLUS, "%s\n", __PRETTY_FUNCTION__);
 
     name_addr_t * addr = getNameAddr(ctx, var_index);
     if (addr->is_global)
-        asm_emit("push QWORD [rbx + (%ld)]", addr->rel_addr);
+        asm_emit("pop QWORD [rbx+(%ld)] \t", addr->rel_addr);
     else
-        asm_emit("push QWORD [rbp + (%ld)]", addr->rel_addr);
+        asm_emit("pop QWORD [rbp+(%ld)] \t", addr->rel_addr);
 
-    asm_emit("      ; %s\n", ctx->id_table[var_index].name);
+    asm_emit_comment("%s\n", ctx->id_table[var_index].name);
 }
 
 
@@ -358,6 +382,8 @@ static void translateAddSubMulDiv(backend_ctx_t * ctx, node_t * node)
     translateExpression(ctx, node->right);
 
     enum oper op_num = node->val.op;
+
+    asm_emit_comment("\t--- ADD, SUB, MUL or DIV ---\n");
 
     if (op_num == DIV)
         asm_emit("xor rdx, rdx\n");
@@ -373,6 +399,10 @@ static void translateAddSubMulDiv(backend_ctx_t * ctx, node_t * node)
     }
 
     asm_emit("push rax\n");
+
+    asm_emit_comment("\t----------------------------\n");
+
+    asm_end_of_block();
 }
 
 
@@ -388,7 +418,7 @@ static void translateCall(backend_ctx_t * ctx, node_t * node)
     size_t num_of_args = ctx->id_table[func_node->val.id].num_of_args;
     const char * func_name = ctx->id_table[func_node->val.id].name;
 
-    asm_emit("\n; --- CALLING %s ---\n", func_name);
+    asm_emit_comment("\t--- CALLING %s ---\n", func_name);
 
     translateCallHandleArgs(ctx, arg_tree);
 
@@ -396,7 +426,9 @@ static void translateCall(backend_ctx_t * ctx, node_t * node)
     asm_emit("add rsp, %zu\n", 8 * num_of_args);
     asm_emit("push rax\n");
 
-    asm_emit("\n; --- END OF CALLING %s ---\n", func_name);
+    asm_emit_comment("\t--- END OF CALLING %s ---\n", func_name);
+
+    asm_end_of_block();
 }
 
 static void translateCallHandleArgs(backend_ctx_t * ctx, node_t * arg_node)
@@ -422,7 +454,9 @@ static void translateVarDecl(backend_ctx_t * ctx, node_t * node)
     printf("name = %s, addr = %ld\n", ctx->id_table[node->left->val.id].name, addr);
 
     addNewName(ctx, node->left->val.id, addr, !(ctx->in_function));
-    asm_emit("sub rsp, 8        ; %s\n", ctx->id_table[node->left->val.id].name);
+    asm_emit("sub rsp, 8\t\t\t\t");
+
+    asm_emit_comment("%s\n", ctx->id_table[node->left->val.id].name);
 }
 
 
@@ -430,13 +464,13 @@ static void translateAssign(backend_ctx_t * ctx, node_t * node)
 {
     logPrint(LOG_DEBUG_PLUS, "%s\n", __PRETTY_FUNCTION__);
 
+    asm_emit_comment("\t--- getting value to assign ---\n");
     translateExpression(ctx, node->right);
 
-    name_addr_t * addr = getNameAddr(ctx, node->left->val.id);
-    if (addr->is_global)
-        asm_emit("pop QWORD [rbx + (%ld)]\n", addr->rel_addr);
-    else
-        asm_emit("pop QWORD [rbp + (%ld)]\n", addr->rel_addr);
+    asm_emit_comment("\t--- ASSIGN ---\n");
+    translatePopVar(ctx, node->left->val.id);
+
+    asm_end_of_block();
 }
 
 
@@ -444,14 +478,17 @@ static void translateReturn(backend_ctx_t * ctx, node_t * node)
 {
     logPrint(LOG_DEBUG_PLUS, "%s\n", __PRETTY_FUNCTION__);
 
+    asm_emit_comment("\t--- getting value to return ---\n");
     translateExpression(ctx, node->left);
 
-    asm_emit("pop rax\n");
+    asm_emit_comment("\t --- RETURN ---\n");
 
+    asm_emit("pop rax\n");
     asm_emit("mov rsp, rbp\n");
     asm_emit("pop rbp\n");
-
     asm_emit("ret\n");
+
+    asm_end_of_block();
 }
 
 
@@ -459,33 +496,48 @@ static void translateIfElse(backend_ctx_t * ctx, node_t * node)
 {
     logPrint(LOG_DEBUG_PLUS, "%s\n", __PRETTY_FUNCTION__);
 
+    asm_emit_comment("\t ========= IF #%zu START =========\n", ctx->if_counter);
+
     // condition expression
     translateExpression(ctx, node->left);
 
     enterScope(ctx, START_OF_SCOPE);
 
-    asm_emit("pop rsi\n");
-    asm_emit("test rsi, rsi\n");
-
     if (node->right->type == OPR && node->right->val.op == IF_ELSE){
         // we have else
         node_t * if_else_node = node->right;
 
+        // check
+        asm_emit("pop rsi\n");
+        asm_emit("test rsi, rsi\n");
         asm_emit("jz __IF_%zu_ELSE\n", ctx->if_counter);
 
+        asm_end_of_block();
+
+        // if body
         makeAssemblyCodeRecursive(ctx, if_else_node->right);
         asm_emit("jmp __IF_%zu_END\n", ctx->if_counter);
 
-        asm_emit("__IF_%zu_ELSE:\n", ctx->if_counter);
+        asm_emit_label("__IF_%zu_ELSE:\n", ctx->if_counter);
+        // else body
         makeAssemblyCodeRecursive(ctx, if_else_node->left);
     }
     else {
         // we do not have else
+        asm_emit("pop rsi\n");
+        asm_emit("test rsi, rsi\n");
         asm_emit("jz __IF_%zu_END\n", ctx->if_counter);
+
+        asm_end_of_block();
+
         makeAssemblyCodeRecursive(ctx, node->right);
     }
 
-    asm_emit("__IF_%zu_END:\n", ctx->if_counter);
+    asm_emit_label("__IF_%zu_END:\n", ctx->if_counter);
+
+    asm_emit_comment("\t ========== IF #%zu END ==========\n", ctx->if_counter);
+
+    asm_end_of_block();
 
     leaveScope(ctx, START_OF_SCOPE);
     ctx->if_counter++;
@@ -496,7 +548,9 @@ static void translateWhile(backend_ctx_t * ctx, node_t * node)
 {
     logPrint(LOG_DEBUG_PLUS, "%s\n", __PRETTY_FUNCTION__);
 
-    asm_emit("__WHILE_%zu_COND_CHECK:\n", ctx->while_counter);
+    asm_emit_comment("\t ======= WHILE #%zu START =======\n", ctx->while_counter);
+
+    asm_emit_label("__WHILE_%zu_COND_CHECK:\n", ctx->while_counter);
     // condition expression
     translateExpression(ctx, node->left);
 
@@ -506,11 +560,17 @@ static void translateWhile(backend_ctx_t * ctx, node_t * node)
     asm_emit("test rsi, rsi\n");
     asm_emit("jz __WHILE_%zu_END\n", ctx->while_counter);
 
+    asm_end_of_block();
+
     // body of while
     makeAssemblyCodeRecursive(ctx, node->right);
 
     asm_emit("jmp __WHILE_%zu_COND_CHECK", ctx->while_counter);
-    asm_emit("__WHILE_%zu_END:\n", ctx->while_counter);
+    asm_emit_label("__WHILE_%zu_END:\n", ctx->while_counter);
+
+    asm_emit_comment("\t ======== WHILE #%zu END ========\n", ctx->while_counter);
+
+    asm_end_of_block();
 
     leaveScope(ctx, START_OF_SCOPE);
     ctx->while_counter++;
@@ -539,13 +599,21 @@ static void translateFuncDecl(backend_ctx_t * ctx, node_t * node)
 
     asm_emit("jmp __END_OF_%s__\n", func_name);
 
-    asm_emit("%s:\n", func_name);
+    asm_emit_comment("========================= DEFINITION OF '%s' =========================\n", func_name);
+
+    // setting frame pointer
+    asm_emit_label("%s:\n", func_name);
     asm_emit("push rbp\n");
     asm_emit("mov rbp, rsp\n");
 
+    asm_end_of_block();
+
+    // func body
     makeAssemblyCodeRecursive(ctx, func_body);
 
-    asm_emit("__END_OF_%s__:\n", func_name);
+    asm_emit_label("__END_OF_%s__:\n", func_name);
+
+    asm_emit_comment("====================== END OF DEFINITION OF '%s' =====================\n\n", func_name);
 
     leaveScope(ctx, START_OF_FUNC_SCOPE);
     ctx->in_function = false;
@@ -568,6 +636,8 @@ static void translateIn(backend_ctx_t * ctx, node_t * node)
 {
     logPrint(LOG_DEBUG_PLUS, "%s\n", __PRETTY_FUNCTION__);
 
+
+    asm_emit_comment("\t--- STANDARD IN ---\n");
     // calling standard func
     asm_emit("call __in_standard_func_please_do_not_name_your_funcs_this_name__\n");
 
@@ -577,6 +647,10 @@ static void translateIn(backend_ctx_t * ctx, node_t * node)
         asm_emit("mov [rbx + (%ld)], rax\n", addr->rel_addr);
     else
         asm_emit("mov [rbp + (%ld)], rax\n", addr->rel_addr);
+
+    asm_emit_comment("\t-------------------\n");
+
+    asm_end_of_block();
 }
 
 
@@ -587,8 +661,16 @@ static void translateOut(backend_ctx_t * ctx, node_t * node)
     // pushing arg
     translateExpression(ctx, node->left);
 
+    asm_emit_comment("\t--- STANDARD OUT ---\n");
+
     // calling standard func
     asm_emit("call __out_standard_func_please_do_not_name_your_funcs_this_name__\n");
     asm_emit("add rsp, 8\n");
+
+    asm_emit_comment("\t--------------------\n");
+
+
+
+    asm_end_of_block();
 }
 
