@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "tree.h"
+#include "x64_emitters.h"
 
 // these constants MUST be negative, so they will not collide with real name_index
 enum scope_start {
@@ -57,7 +58,10 @@ enum IR_type {
     IR_GREATER_EQ = 20,
     IR_LESS_EQ    = 21,
     IR_EQUAL      = 22,
-    IR_N_EQUAL    = 23
+    IR_N_EQUAL    = 23,
+
+    IR_START      = 24,
+    IR_EXIT       = 25
 };
 
 
@@ -76,6 +80,8 @@ typedef struct {
 
     size_t name_id;
     size_t arg_num;                 //< for funcs
+
+    int32_t addr;
 } IR_block_t;
 
 const size_t IR_START_CAP = 1024;
@@ -90,6 +96,7 @@ typedef struct {
     node_t * root;
 
     FILE * asm_file;
+    emit_ctx_t * emit;
 
     idr_t * id_table;
     size_t id_table_size;

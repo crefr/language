@@ -25,7 +25,7 @@ int main(int argc, char ** argv)
     backend_ctx_t backend = backendInit(argv[1]);
 
     makeIR(&backend);
-    compileFromIR(&backend, argv[2], "std_funcs.asm");
+    compile(&backend, argv[2], "std_funcs.asm");
 
     backendDestroy(&backend);
 

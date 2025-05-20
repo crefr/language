@@ -268,7 +268,11 @@ void makeIR(backend_ctx_t * ctx)
     ctx->IR.capacity = IR_START_CAP;
     ctx->IR.size = 0;
 
+    IRnextBlock(ctx, IR_START);
+
     makeIRrecursive(ctx, ctx->root);
+
+    IRnextBlock(ctx, IR_EXIT);
 
     IRresolveLabels(ctx);
 }
