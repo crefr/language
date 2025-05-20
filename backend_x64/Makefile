@@ -78,13 +78,14 @@ FILE_BASE=$(basename $(FILE))
 AST_FILE=$(addsuffix .ast, $(FILE_BASE))
 ASM_FILE=compiled/$(notdir $(addsuffix .asm, $(FILE_BASE)))
 OBJ_FILE=compiled/$(notdir $(addsuffix .o, $(FILE_BASE)))
+LST_FILE=compiled/$(addprefix lst_, $(notdir $(addsuffix .asm, $(FILE_BASE))))
 
 compile_asm:
 	./../frontend.exe $(FILE) $(addsuffix .ast, $(FILE_BASE))
 	./../middleend.exe $(AST_FILE) $(AST_FILE)
 	./$(FILENAME) $(AST_FILE) $(ASM_FILE)
 
-	nasm -felf64 $(ASM_FILE) -o $(OBJ_FILE)
+	nasm -felf64 $(ASM_FILE) -l $(LST_FILE) -o $(OBJ_FILE)
 	ld $(OBJ_FILE) -o compiled/$(notdir $(FILE_BASE))
 
 
