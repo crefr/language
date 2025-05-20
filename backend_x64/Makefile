@@ -71,6 +71,23 @@ $(GLOBAL_OBJECTS_WITH_DIR): $(GLOBALOBJDIR)%.o: $(GLOBALSRCDIR)%.c $(ALLDEPS)
 $(TABLELIB):
 	cd $(TABLELIBFOLDER) && make static_lib
 
+
+FILE=../program.txt
+FILE_BASE=$(basename $(FILE))
+
+AST_FILE=$(addsuffix .ast, $(FILE_BASE))
+ASM_FILE=compiled/$(notdir $(addsuffix .asm, $(FILE_BASE)))
+OBJ_FILE=compiled/$(notdir $(addsuffix .o, $(FILE_BASE)))
+
+compile_asm:
+	./../frontend.exe $(FILE) $(addsuffix .ast, $(FILE_BASE))
+	./../middleend.exe $(AST_FILE) $(AST_FILE)
+	./$(FILENAME) $(AST_FILE) $(ASM_FILE)
+
+	nasm -felf64 $(ASM_FILE) -o $(OBJ_FILE)
+	ld $(OBJ_FILE) -o compiled/$(notdir $(FILE_BASE))
+
+
 clean:
 	rm $(OBJDIR)*
 

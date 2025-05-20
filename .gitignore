@@ -8,6 +8,8 @@ asm_file2.asm
 *.out
 *.ast
 
+compiled/
+
 Obj/
 frontend/Obj/
 backend/Obj/
