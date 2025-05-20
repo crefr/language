@@ -1,3 +1,4 @@
+global _start
 section .text
 
 ; ================================================================
@@ -15,12 +16,13 @@ __in_standard_func_please_do_not_name_your_funcs_this_name__:
         sub rsp, 32        ; [rbp - 32] is start of the buffer
 
         xor r12, r12            ; index = 0
+		xor r13, r13
 
     ; --- checking first symbol for '-' ---
         ; --- reading ---
         mov rax, 0
         mov rdi, 0
-        lea rsi, [-32 + rbp + r12*1]
+        lea rsi, [-32 + rbp]
         mov rdx, 1
 
         syscall
@@ -99,7 +101,7 @@ __out_standard_func_please_do_not_name_your_funcs_this_name__:
 
         mov rax, [rbp + 16]         ; rax = first arg
 
-        mov r8, QWORD 0x8000000000000000
+        mov r8, QWORD (1 << 63)
         xor rcx, rcx
 
         test rax, r8
@@ -154,4 +156,3 @@ __out_standard_func_please_do_not_name_your_funcs_this_name__:
         pop rbp
     ret
 ; ================================================================
-

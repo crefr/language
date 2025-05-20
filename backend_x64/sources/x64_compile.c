@@ -240,11 +240,11 @@ static void compileAddSubMulDiv(backend_ctx_t * ctx, IR_block_t * block)
 {
     asm_emit_comment("\t--- ADD, SUB, MUL or DIV ---\n");
 
-    if (block->type == IR_DIV)
-        asm_emit("xor rdx, rdx\n");
-
     asm_emit("pop rcx\n");
     asm_emit("pop rax\n");
+
+    if (block->type == IR_DIV)
+        asm_emit("cqo\n");
 
     switch(block->type){
         case IR_ADD: asm_emit("add rax, rcx\n"); break;

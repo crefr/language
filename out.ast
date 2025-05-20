@@ -1,10 +1,6 @@
 IR312:1
-NAMETABLE size: 5 {
+NAMETABLE size: 1 {
 	0000: "x", VAR, 0;
-	0001: "factorial", FUNC, 1;
-	0002: "number", VAR, 0;
-	0003: "answer", VAR, 0;
-	0004: "new_number", VAR, 0;
 }
 {OPR:SEP
 {OPR:VAR
@@ -13,59 +9,21 @@ NAMETABLE size: 5 {
 {OPR:IN
 {IDR:0}{}}
 {OPR:SEP
-{OPR:OUT
-{OPR:CALL
-{IDR:1}{OPR:ARG_SEP
-{IDR:0}{}}
-}
-{}}
-{OPR:SEP
-{OPR:DEF
-{OPR:FUNC_HDR
-{IDR:1}{OPR:ARG_SEP
-{IDR:2}{}}
-}
-{OPR:SEP
 {OPR:IF
-{OPR:SUB
-{IDR:2}{NUM:1}}
+{OPR:LESS_EQ
+{IDR:0}{NUM:1}}
+{OPR:ELSE
 {OPR:SEP
-{OPR:VAR
-{IDR:3}{}}
-{OPR:SEP
-{OPR:VAR
-{IDR:4}{}}
-{OPR:SEP
-{OPR:ASSIGN
-{IDR:4}{OPR:SUB
-{IDR:2}{NUM:1}}
-}
-{OPR:SEP
-{OPR:ASSIGN
-{IDR:3}{OPR:MUL
-{OPR:CALL
-{IDR:1}{OPR:ARG_SEP
-{IDR:4}{}}
-}
-{IDR:2}}
-}
-{OPR:SEP
-{OPR:RET
-{IDR:3}{}}
+{OPR:OUT
+{NUM:52}{}}
 {}}
-}
-}
-}
-}
-}
 {OPR:SEP
-{OPR:RET
-{NUM:1}{}}
+{OPR:OUT
+{NUM:228}{}}
 {}}
 }
 }
 {}}
-}
 }
 }
 

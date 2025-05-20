@@ -11,22 +11,21 @@ a = solveSq(a, b, c);
 func solveSq(a, b, c)
 begin
     if (a == 0)
-    begin
+      begin
         var x;
 
         x = solveLinear(b, c);
         out(x);
 
         return 0;
-    end;
+     end;
 
     var diskr;
     diskr = diskriminant(a, b, c);
 
-    out(diskr);
 
     if (diskr > 0)
-    begin
+      begin
         var x1;
         var x2;
 
@@ -35,23 +34,21 @@ begin
 
         out (x1);
         out (x2);
-    end
-
+      end
     else
-    begin
+      begin
         if (diskr == 0)
-        begin
+          begin
             var x;
             x = (0 - b) / (2*a);
 
             out(x);
-        end
-
+          end
         else
-        begin
+          begin
             out(52);
-        end;
-    end;
+          end;
+      end;
 
     return 0;
 end;
@@ -60,16 +57,19 @@ func diskriminant(a, b, c)
 begin
     var diskr;
 
+    #out(b*b);#
+
     diskr = b*b - 4 * a*c;
+    #out(diskr);#
 
     return diskr;
 end;
 
-func solveLinear(b, a)
+func solveLinear(a, b)
 begin
     var x;
 
-    x = (0 - a) / b;
+    x = (0 - b) / a;
 
     return x;
 end;

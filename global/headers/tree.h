@@ -151,7 +151,9 @@ typedef struct {
     char name[NAME_MAX_LENGTH];
     enum id_type type;         // is VAR by default
 
+    // for functions
     size_t num_of_args;
+    size_t IR_index;
 } idr_t;
 
 typedef struct {

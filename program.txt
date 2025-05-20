@@ -1,20 +1,11 @@
 var x;
 in(x);
 
-out(factorial(x));
-
-func factorial(number)
-begin
-    if (number - 1)
-    begin
-        var answer;
-        var new_number;
-
-        new_number = number - 1;
-        answer = factorial(new_number) * number;
-
-        return answer;
-    end;
-
-    return 1;
-end;
+if (x <= 1)
+  begin
+    out(52);
+  end
+else
+  begin
+    out(228);
+  end;
