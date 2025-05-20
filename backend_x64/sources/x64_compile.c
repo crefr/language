@@ -521,13 +521,17 @@ static size_t compileCmp(backend_ctx_t * ctx, IR_block_t * block)
     size_t block_size = 0;
 
     asm_emit_comment("\t--- < <= > >= == ---\n");
-    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     asm_emit("xor rdx, rdx\n");
+    EMIT(emit_xor_reg_reg, R_RDX, R_RDX);
 
     asm_emit("pop rcx\n");
+    EMIT(emit_pop_reg, R_RCX);
+
     asm_emit("pop rax\n");
+    EMIT(emit_pop_reg, R_RAX);
 
     asm_emit("cmp rax, rcx\n");
+    EMIT(emit_cmp_reg_reg, R_RAX, R_RCX);
 
     switch (block->type){
         case IR_EQUAL:      asm_emit("sete  dl\n"); break;
@@ -538,7 +542,11 @@ static size_t compileCmp(backend_ctx_t * ctx, IR_block_t * block)
         case IR_GREATER_EQ: asm_emit("setge dl\n"); break;
     }
 
+    enum cmp_emit_num cmp_num = (enum cmp_emit_num)(block->type - IR_GREATER + EMIT_GREATER);
+    EMIT(emit_setcc_reg8, cmp_num, R_RDX);
+
     asm_emit("push rdx\n");
+    EMIT(emit_push_reg, R_RDX);
 
     asm_end_of_block();
 

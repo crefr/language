@@ -32,23 +32,24 @@ enum regs {
 
 
 const char * const reg_names[16] = {
-    "RAX",
-    "RDX",
-    "RCX",
-    "RBX",
-    "RSP",
-    "RBP",
-    "RSI",
-    "RDI",
-    "R8" ,
-    "R9" ,
-    "R10",
-    "R11",
-    "R12",
-    "R13",
-    "R14",
-    "R15"
+    "RAX", "RCX", "RDX", "RBX", "RSP", "RBP", "RSI", "RDI",
+    "R8" , "R9" , "R10", "R11", "R12", "R13", "R14", "R15"
 };
+
+const char * const reg8_names[8] = {
+    "AL" , "CL" , "DL" , "BL" , "SPL", "BPL", "SIL", "DIL",
+};
+
+
+enum cmp_emit_num {
+    EMIT_GREATER    = 0,
+    EMIT_LESS       = 1,
+    EMIT_GREATER_EQ = 2,
+    EMIT_LESS_EQ    = 3,
+    EMIT_EQUAL      = 4,
+    EMIT_N_EQUAL    = 5,
+};
+
 
 /******************** PUSH ********************/
 // push reg64
@@ -121,6 +122,15 @@ size_t emit_call_rel32(emit_ctx_t * ctx, int32_t rel32);
 
 // test reg64, reg64
 size_t emit_test_reg_reg(emit_ctx_t * cxt, int dst, int src);
+
+// xor reg64, reg64
+size_t emit_xor_reg_reg(emit_ctx_t * ctx, int dst, int src);
+
+// cmp reg64, reg64
+size_t emit_cmp_reg_reg(emit_ctx_t * ctx, int dst, int src);
+
+// setcc reg8
+size_t emit_setcc_reg8(emit_ctx_t * ctx, enum cmp_emit_num cmp_num, int reg);
 
 // ret
 size_t emit_ret(emit_ctx_t * ctx);

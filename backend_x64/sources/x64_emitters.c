@@ -68,7 +68,7 @@ static uint8_t modRM(uint8_t mod, uint8_t reg, uint8_t rm)
 #define check_src_reg(reg, rex) do{if (reg >= R_R8) {reg-=8; rex|=REX_R;}} while(0)
 #define check_dst_reg(reg, rex) do{if (reg >= R_R8) {reg-=8; rex|=REX_B;}} while(0)
 
-#define asm_emit(...) fprintf(ctx->asm_file, "\t\t" __VA_ARGS__)
+#define asm_emit(...) if (ctx->emitting) fprintf(ctx->asm_file, "\t\t" __VA_ARGS__)
 
 
 /******************** PUSH ********************/
@@ -331,6 +331,19 @@ size_t emit_call_rel32(emit_ctx_t * ctx, int32_t rel32)
 /***************************************************/
 
 
+// xor reg64, reg64
+size_t emit_xor_reg_reg(emit_ctx_t * ctx, int dst, int src)
+{
+    asm_emit("xor %s, %s\n", reg_names[dst], reg_names[src]);
+
+    uint8_t rex = REX_W;
+    check_dst_reg(dst, rex);
+    check_src_reg(src, rex);
+
+    return emit_bytes(rex, 0x31, modRM(0b11, src, dst));
+}
+
+
 // test reg64, reg64
 size_t emit_test_reg_reg(emit_ctx_t * ctx, int dst, int src)
 {
@@ -341,6 +354,64 @@ size_t emit_test_reg_reg(emit_ctx_t * ctx, int dst, int src)
     check_src_reg(src, rex);
 
     return emit_bytes(rex, (uint8_t)0x85, modRM(0b11, src, dst));
+}
+
+// cmp reg64, reg64
+size_t emit_cmp_reg_reg(emit_ctx_t * ctx, int dst, int src)
+{
+    asm_emit("cmp %s, %s\n", reg_names[dst], reg_names[src]);
+
+    uint8_t rex = REX_W;
+    check_dst_reg(dst, rex);
+    check_src_reg(src, rex);
+
+    return emit_bytes(rex, 0x39, modRM(0b11, src, dst));
+}
+
+// setcc
+size_t emit_setcc_reg8(emit_ctx_t * ctx, enum cmp_emit_num cmp_num, int reg)
+{
+    size_t emitted_bytes = 0;
+
+    if (reg >= R_RSP)
+        emitted_bytes += emit_bytes(REX_CODE);
+
+    emitted_bytes += emit_bytes(0x0F);
+    switch (cmp_num){
+        case EMIT_GREATER:
+            asm_emit("setg %s\n", reg8_names[reg]);
+            emitted_bytes += emit_bytes(0x9F);
+            break;
+
+        case EMIT_LESS:
+            asm_emit("setl %s\n", reg8_names[reg]);
+            emitted_bytes += emit_bytes(0x9C);
+            break;
+
+        case EMIT_GREATER_EQ:
+            asm_emit("setge %s\n", reg8_names[reg]);
+            emitted_bytes += emit_bytes(0x9D);
+            break;
+
+        case EMIT_LESS_EQ:
+            asm_emit("setle %s\n", reg8_names[reg]);
+            emitted_bytes += emit_bytes(0x9E);
+            break;
+
+        case EMIT_EQUAL:
+            asm_emit("sete %s\n", reg8_names[reg]);
+            emitted_bytes += emit_bytes(0x94);
+            break;
+
+        case EMIT_N_EQUAL:
+            asm_emit("setne %s\n", reg8_names[reg]);
+            emitted_bytes += emit_bytes(0x95);
+            break;
+    }
+
+    emitted_bytes += emit_bytes(modRM(0b11, 0, reg));
+
+    return emitted_bytes;
 }
 
 
