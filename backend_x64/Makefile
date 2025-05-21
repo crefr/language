@@ -44,11 +44,11 @@ endif
 CFLAGS := -I./$(HEADDIR) -I./$(GLOBALHEADDIR) $(CFLAGS)
 
 GLOBALDEPS = $(GLOBALHEADDIR)logger.h $(GLOBALHEADDIR)hashtable.h $(GLOBALHEADDIR)tree.h $(GLOBALHEADDIR)IR_handler.h
-LOCALDEPS  = $(HEADDIR)backend_x64.h $(HEADDIR)x64_compile.h $(HEADDIR)x64_emitters.h
+LOCALDEPS  = $(HEADDIR)backend_x64.h $(HEADDIR)x64_compile.h $(HEADDIR)x64_emitters.h $(HEADDIR)elf_handler.h
 
 ALLDEPS    = $(LOCALDEPS) $(GLOBALDEPS)
 
-LOCAL_OBJECTS  = main.o backend_x64.o x64_compile.o x64_emitters.o
+LOCAL_OBJECTS  = main.o backend_x64.o x64_compile.o x64_emitters.o elf_handler.o
 LOCAL_OBJECTS_WITH_DIR = $(addprefix $(OBJDIR),$(LOCAL_OBJECTS))
 
 GLOBAL_OBJECTS = logger.o tree.o IR_handler.o

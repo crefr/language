@@ -3,9 +3,12 @@
 #include <assert.h>
 #include <stdint.h>
 
+#include <sys/stat.h>
+
 #include "backend_x64.h"
 #include "x64_compile.h"
 #include "x64_emitters.h"
+#include "elf_handler.h"
 #include "logger.h"
 
 #define asm_emit(...)         fprintf(ctx->asm_file, "\t\t" __VA_ARGS__)
@@ -14,6 +17,10 @@
 #define asm_end_of_block()    fprintf(ctx->asm_file, "\n")
 
 #define EMIT(emit_func, ...) block_size += emit_func (ctx->emit ,##__VA_ARGS__)
+
+static size_t calculateAddresses(backend_ctx_t * ctx);
+
+static size_t compileFromIR(backend_ctx_t * ctx);
 
 
 static void emitStdFuncs(backend_ctx_t * ctx, const char * std_lib_file_name);
@@ -56,6 +63,8 @@ static size_t compileSqrt(backend_ctx_t * ctx, IR_block_t * block);
 static size_t compileCmp(backend_ctx_t * ctx, IR_block_t * block);
 
 
+
+
 void compile(backend_ctx_t * ctx, const char * asm_file_name, const char * std_lib_file_name)
 {
     assert(ctx);
@@ -64,27 +73,29 @@ void compile(backend_ctx_t * ctx, const char * asm_file_name, const char * std_l
 
     FILE * emit_asm_file = fopen("asm_file.asm", "w");
     FILE * emit_bin_file = fopen("bin_file.bin", "wb");
+    assert(emit_bin_file);
     setbuf(emit_bin_file, NULL);
 
     emit_ctx_t emit_ctx = {
         .bin_file = emit_bin_file,
         .asm_file = emit_asm_file,
-        .emitting = false
+        .emitting = true
     };
+
     ctx->emit = &emit_ctx;
-
     ctx->asm_file = fopen(asm_file_name, "w");
-
     emitStdFuncs(ctx, std_lib_file_name);
 
-    // first time to calculate indexes
+    /**** compiling here ****/
+    size_t code_size = calculateAddresses(ctx);
+    writeSimpleElfHeader(emit_bin_file, code_size);
+
     compileFromIR(ctx);
+    /************************/
 
-    ctx->emit->emitting = true;
+    chmod("bin_file.bin", 0755);
 
-    // second time for compiling
-    compileFromIR(ctx);
-
+    // exiting
     fclose(ctx->asm_file);
 
     fclose(emit_asm_file);
@@ -92,7 +103,21 @@ void compile(backend_ctx_t * ctx, const char * asm_file_name, const char * std_l
 }
 
 
-void compileFromIR(backend_ctx_t * ctx)
+static size_t calculateAddresses(backend_ctx_t * ctx)
+{
+    assert(ctx);
+
+    ctx->emit->emitting = false;
+
+    size_t code_size = compileFromIR(ctx);
+
+    ctx->emit->emitting = true;
+
+    return code_size;
+}
+
+
+static size_t compileFromIR(backend_ctx_t * ctx)
 {
     assert(ctx);
 
@@ -153,6 +178,8 @@ void compileFromIR(backend_ctx_t * ctx)
 
 
     logPrint(LOG_DEBUG, "\nsuccessfully translated to asm!\n");
+
+    return cur_addr;
 }
 
 
@@ -236,6 +263,7 @@ static size_t compileJmp(backend_ctx_t * ctx, IR_block_t * block)
     asm_emit("jmp %s\n", label_block->label_name);
 
     int32_t rel_addr = (int32_t)label_block->addr - (int32_t)block->addr;
+    rel_addr -= 5;
     EMIT(emit_jmp_rel32, rel_addr);
 
     asm_end_of_block();
@@ -259,7 +287,7 @@ static size_t compileCondJmp(backend_ctx_t * ctx, IR_block_t * block)
     asm_emit("test rsi, rsi\n");
     EMIT(emit_test_reg_reg, R_RSI, R_RSI);
 
-    rel_addr += block_size + 6;
+    rel_addr -= block_size + 6;
 
     asm_emit("jz %s\n", label_block->label_name);
     EMIT(emit_jz_rel32, rel_addr);
@@ -410,7 +438,7 @@ static size_t compileCall(backend_ctx_t * ctx, IR_block_t * block)
 
     asm_emit_comment("\t--- CALLING %s ---\n", label_block->label_name);
 
-    rel_addr += 5;
+    rel_addr -= 5;
     asm_emit("call %s\n", label_block->label_name);
     EMIT(emit_call_rel32, rel_addr);
 

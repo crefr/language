@@ -5,7 +5,5 @@
 
 void compile(backend_ctx_t * ctx, const char * asm_file_name, const char * std_lib_file_name);
 
-void compileFromIR(backend_ctx_t * ctx);
-
 
 #endif

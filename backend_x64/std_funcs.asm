@@ -1,6 +1,15 @@
 global _start
 section .text
 
+
+;====================================================
+; ---- RELATIVE ADDRESSES FOR COMPILER ----
+; These addresses are relative to the start of std_funcs
+dq __in_standard_func_please_do_not_name_your_funcs_this_name__  - $
+dq __out_standard_func_please_do_not_name_your_funcs_this_name__ - $ + 8
+;====================================================
+
+
 ; ================================================================
 ; -----------------------------------------
 ; Standard function for reading numbers
@@ -156,3 +165,4 @@ __out_standard_func_please_do_not_name_your_funcs_this_name__:
         pop rbp
     ret
 ; ================================================================
+

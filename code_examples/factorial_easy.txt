@@ -1,7 +1,8 @@
 var x;
-in(x);
+#in(x);#
+x = 5;
 
-out(factorial(x));
+#out(factorial(x));#
 
 func factorial(number)
 begin
