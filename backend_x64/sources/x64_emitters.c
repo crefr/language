@@ -19,10 +19,7 @@ static size_t emit_bytes_func(emit_ctx_t * ctx, size_t num_of_bytes, ...)
     va_list args;
     va_start(args, num_of_bytes);
 
-    printf("emitting\n");
-
     if (ctx->emitting){
-        printf("emitting, BITCH!\n");
         for (size_t byte_index = 0; byte_index < num_of_bytes; byte_index++){
             uint8_t byte = (uint8_t)va_arg(args, int);
             fputc(byte, ctx->bin_file);

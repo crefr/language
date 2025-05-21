@@ -128,10 +128,10 @@ static size_t readStdFuncsAddresses(backend_ctx_t * ctx, FILE * std_lib_file, si
     ctx->IR.std_in_addr  = std_in_addr;
     ctx->IR.std_out_addr = std_out_addr;
 
-    logPrint(LOG_DEBUG, "std_in  addr = %zu\n", std_in_addr);
-    logPrint(LOG_DEBUG, "std_out addr = %zu\n", std_out_addr);
+    printf("std_in  addr = %zu\n", std_in_addr);
+    printf("std_out addr = %zu\n", std_out_addr);
 
-    return std_lib_code_size - 16;
+    return std_lib_code_size;
 }
 
 
