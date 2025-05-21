@@ -296,7 +296,7 @@ size_t emit_mov_reg_imm(emit_ctx_t * ctx, int reg, int64_t imm64)
 // jmp imm32 (near)
 size_t emit_jmp_rel32(emit_ctx_t * ctx, int32_t rel32)
 {
-    asm_emit("jmp $ + 5 + (%d)\n", rel32);
+    asm_emit("jmp $ + (%d)\n", rel32);
 
     size_t emitted_bytes = 0;
     emitted_bytes += emit_bytes(0xE9);
@@ -308,7 +308,7 @@ size_t emit_jmp_rel32(emit_ctx_t * ctx, int32_t rel32)
 // jz imm32 (near)
 size_t emit_jz_rel32(emit_ctx_t * ctx, int32_t rel32)
 {
-    asm_emit("jz $ + 6 + (%d)\n", rel32);
+    asm_emit("jz $ + (%d)\n", rel32);
 
     size_t emitted_bytes = 0;
     emitted_bytes += emit_bytes(0x0F, 0x84);
@@ -321,7 +321,7 @@ size_t emit_jz_rel32(emit_ctx_t * ctx, int32_t rel32)
 // call imm32 (near)
 size_t emit_call_rel32(emit_ctx_t * ctx, int32_t rel32)
 {
-    asm_emit("call $ + 5 + (%d)\n", rel32);
+    asm_emit("call $ + (%d)\n", rel32);
 
     size_t emitted_bytes = 0;
     emitted_bytes += emit_bytes(0xE8);

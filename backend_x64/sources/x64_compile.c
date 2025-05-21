@@ -11,19 +11,20 @@
 #include "elf_handler.h"
 #include "logger.h"
 
-#define asm_emit(...)         fprintf(ctx->asm_file, "\t\t" __VA_ARGS__)
-#define asm_emit_label(...)   fprintf(ctx->asm_file, __VA_ARGS__)
-#define asm_emit_comment(...) fprintf(ctx->asm_file, "; " __VA_ARGS__)
-#define asm_end_of_block()    fprintf(ctx->asm_file, "\n")
+#define asm_emit_label(...)   if (ctx->emit->emitting) fprintf(ctx->emit->asm_file, __VA_ARGS__)
+#define asm_emit_comment(...) if (ctx->emit->emitting) fprintf(ctx->emit->asm_file, "; " __VA_ARGS__)
+#define asm_end_of_block()    if (ctx->emit->emitting) fprintf(ctx->emit->asm_file, "\n")
 
+#define BLOCK_START     size_t block_size = 0
 #define EMIT(emit_func, ...) block_size += emit_func (ctx->emit ,##__VA_ARGS__)
+#define BLOCK_RET       return block_size
 
 static size_t calculateAddresses(backend_ctx_t * ctx, size_t start_addr);
 
+static size_t readStdFuncsAddresses(backend_ctx_t * ctx, FILE * std_lib_file, size_t std_lib_code_size);
+
 static size_t compileFromIR(backend_ctx_t * ctx, size_t start_addr);
 
-
-static void emitStdFuncs(backend_ctx_t * ctx, const char * std_lib_file_name);
 
 static void emitBinStdFuncs(FILE * std_funcs_bin_file, FILE * bin_file, size_t std_funcs_code_size);
 
@@ -65,18 +66,16 @@ static size_t compileSqrt(backend_ctx_t * ctx, IR_block_t * block);
 static size_t compileCmp(backend_ctx_t * ctx, IR_block_t * block);
 
 
-
-
-void compile(backend_ctx_t * ctx, const char * asm_file_name, const char * std_lib_file_name)
+void compile(backend_ctx_t * ctx, const char * asm_file_name, const char * elf_file_name, const char * std_lib_file_name)
 {
     assert(ctx);
     assert(asm_file_name);
     assert(std_lib_file_name);
 
-    FILE * emit_asm_file = fopen("asm_file.asm", "w");
-    FILE * emit_bin_file = fopen("bin_file.bin", "wb");
+    FILE * emit_asm_file = fopen(asm_file_name, "w");
+    FILE * emit_bin_file = fopen(elf_file_name, "wb");
 
-    FILE * std_lib_bin_file = fopen("std_funcs.bin", "rb");
+    FILE * std_lib_bin_file = fopen(std_lib_file_name, "rb");
 
     assert(emit_bin_file);
     setbuf(emit_bin_file, NULL);
@@ -88,42 +87,51 @@ void compile(backend_ctx_t * ctx, const char * asm_file_name, const char * std_l
     };
 
     ctx->emit = &emit_ctx;
-    ctx->asm_file = fopen(asm_file_name, "w");
-    emitStdFuncs(ctx, std_lib_file_name);
 
     /**** compiling here ****/
     size_t std_lib_code_size = moveToCodeStart(std_lib_bin_file);
 
-    size_t std_in_addr = 0;
-    size_t std_out_addr = 0;
-
-    fread(&std_in_addr , sizeof(std_in_addr) , 1, std_lib_bin_file);
-    fread(&std_out_addr, sizeof(std_out_addr), 1, std_lib_bin_file);
-    std_lib_code_size -= sizeof(std_in_addr) + sizeof(std_out_addr);
-    std_in_addr  -= 16;
-    std_out_addr -= 16;
-
-    ctx->IR.std_in_addr  = std_in_addr;
-    ctx->IR.std_out_addr = std_out_addr;
-
-    printf("std_in  addr = %zu\n", std_in_addr);
-    printf("std_out addr = %zu\n", std_out_addr);
+    std_lib_code_size = readStdFuncsAddresses(ctx, std_lib_bin_file, std_lib_code_size);
 
     size_t code_size = calculateAddresses(ctx, std_lib_code_size);
+
     writeSimpleElfHeader(emit_bin_file, std_lib_code_size, code_size);
 
     emitBinStdFuncs(std_lib_bin_file, emit_bin_file, std_lib_code_size);
     compileFromIR(ctx, 0);
     /************************/
 
-    chmod("bin_file.bin", 0755);
-
-    // exiting
-    fclose(ctx->asm_file);
-
     fclose(std_lib_bin_file);
     fclose(emit_asm_file);
     fclose(emit_bin_file);
+
+    chmod(elf_file_name, 0755);
+}
+
+
+static size_t readStdFuncsAddresses(backend_ctx_t * ctx, FILE * std_lib_file, size_t std_lib_code_size)
+{
+    assert(ctx);
+    assert(std_lib_file);
+
+    size_t std_in_addr = 0;
+    size_t std_out_addr = 0;
+
+    fread(&std_in_addr , sizeof(std_in_addr) , 1, std_lib_file);
+    fread(&std_out_addr, sizeof(std_out_addr), 1, std_lib_file);
+
+    std_lib_code_size -= sizeof(std_in_addr) + sizeof(std_out_addr);
+
+    std_in_addr  -= 16;
+    std_out_addr -= 16;
+
+    ctx->IR.std_in_addr  = std_in_addr;
+    ctx->IR.std_out_addr = std_out_addr;
+
+    logPrint(LOG_DEBUG, "std_in  addr = %zu\n", std_in_addr);
+    logPrint(LOG_DEBUG, "std_out addr = %zu\n", std_out_addr);
+
+    return std_lib_code_size - 16;
 }
 
 
@@ -146,8 +154,6 @@ static size_t compileFromIR(backend_ctx_t * ctx, size_t start_addr)
     assert(ctx);
 
     logPrint(LOG_DEBUG, "\nstarted translating to asm...\n");
-
-    fprintf(ctx->asm_file, "global _start\n");
 
     size_t cur_addr = start_addr;
 
@@ -235,65 +241,53 @@ static void emitBinStdFuncs(FILE * std_funcs_bin_file, FILE * bin_file, size_t s
 
 static size_t emitStart(backend_ctx_t * ctx, IR_block_t * block)
 {
-    size_t block_size = 0;
+    BLOCK_START;
+
     asm_emit_comment("===================== STARTING TRANSLATION =====================\n");
-
-
     asm_emit_label("_start:\n");
 
-    asm_emit("mov rbx, rsp\n");
     EMIT(emit_mov_reg_reg, R_RBX, R_RSP);
 
     asm_end_of_block();
 
-    return block_size;
+    BLOCK_RET;
 }
 
 
 static size_t emitExit(backend_ctx_t * ctx, IR_block_t * block)
 {
-    size_t block_size = 0;
+    BLOCK_START;
     asm_emit_comment("\t--- EXITING ---\n");
 
-    asm_emit("mov rsp, rbx\n");
     EMIT(emit_mov_reg_reg, R_RSP, R_RBX);
-
-    asm_emit("mov rax, 0x3c\n");
     EMIT(emit_mov_reg_imm, R_RAX, 0x3c);
-
-    asm_emit("mov rdi, 0x00\n");
     EMIT(emit_mov_reg_imm, R_RDI, 0x00);
-
-    asm_emit("syscall\n");
     EMIT(emit_syscall);
 
-    return block_size;
+    BLOCK_RET;
 }
 
 
 static size_t compileSetFrPtr(backend_ctx_t * ctx, IR_block_t * block)
 {
-    size_t block_size = 0;
+    BLOCK_START;
 
-    asm_emit("push rbp\n");
     EMIT(emit_push_reg, R_RBP);
-
-    asm_emit("mov rbp, rsp\n");
     EMIT(emit_mov_reg_reg, R_RBP, R_RSP);
 
     asm_end_of_block();
 
-    return block_size;
+    BLOCK_RET;
 }
 
 
 static size_t compileJmp(backend_ctx_t * ctx, IR_block_t * block)
 {
-    size_t block_size = 0;
+    BLOCK_START;
 
     IR_block_t * label_block = ctx->IR.blocks + block->label_block_idx;
 
-    asm_emit("jmp %s\n", label_block->label_name);
+    asm_emit_comment("\t --- to label %s ---\n", label_block->label_name);
 
     int32_t rel_addr = (int32_t)label_block->addr - (int32_t)block->addr;
     rel_addr -= 5;
@@ -301,33 +295,30 @@ static size_t compileJmp(backend_ctx_t * ctx, IR_block_t * block)
 
     asm_end_of_block();
 
-    return block_size;
+    BLOCK_RET;
 }
 
 
 static size_t compileCondJmp(backend_ctx_t * ctx, IR_block_t * block)
 {
-    size_t block_size = 0;
+    BLOCK_START;
 
     IR_block_t * label_block = ctx->IR.blocks + block->label_block_idx;
-    int32_t rel_addr = (int32_t)label_block->addr - (int32_t)block->addr;
 
     asm_emit_comment("--- COND CHECK ---\n");
 
-    asm_emit("pop rsi\n");
     EMIT(emit_pop_reg, R_RSI);
-
-    asm_emit("test rsi, rsi\n");
     EMIT(emit_test_reg_reg, R_RSI, R_RSI);
 
+    int32_t rel_addr = (int32_t)label_block->addr - (int32_t)block->addr;
     rel_addr -= block_size + 6;
 
-    asm_emit("jz %s\n", label_block->label_name);
+    asm_emit_comment("\t --- to label %s ---\n", label_block->label_name);
     EMIT(emit_jz_rel32, rel_addr);
 
     asm_end_of_block();
 
-    return block_size;
+    BLOCK_RET;
 }
 
 
@@ -341,283 +332,208 @@ static size_t compileLabel(backend_ctx_t * ctx, IR_block_t * block)
 
 static size_t compilePushImm(backend_ctx_t * ctx, IR_block_t * block)
 {
-    size_t block_size = 0;
-    asm_emit("push %ld\n", block->imm_val);
+    BLOCK_START;
+
     EMIT(emit_push_imm32, block->imm_val);
 
-    return block_size;
+    BLOCK_RET;
 }
 
 
 static size_t compilePushMem(backend_ctx_t * ctx, IR_block_t * block)
 {
-    size_t block_size = 0;
+    BLOCK_START;
 
-    if (block->var.is_global){
-        asm_emit("push QWORD [rbx+(%ld)]\t", block->var.rel_addr);
+    asm_emit_comment("\t --- push %s ---\n", ctx->id_table[block->var.name_index].name);
+
+    if (block->var.is_global)
         EMIT(emit_push_mem, R_RBX, block->var.rel_addr);
-    }
-    else{
-        asm_emit("push QWORD [rbp+(%ld)]\t", block->var.rel_addr);
+    else
         EMIT(emit_push_mem, R_RBP, block->var.rel_addr);
-    }
 
-    asm_emit_comment("%s\n", ctx->id_table[block->var.name_index].name);
 
-    return block_size;
+    BLOCK_RET;
 }
 
 
 static size_t compilePopVar(backend_ctx_t * ctx, IR_block_t * block)
 {
-    size_t block_size = 0;
+    BLOCK_START;
 
-    if (block->var.is_global){
-        asm_emit("pop QWORD [rbx+(%ld)] \t", block->var.rel_addr);
+    asm_emit_comment("\t --- pop %s ---\n", ctx->id_table[block->var.name_index].name);
+
+    if (block->var.is_global)
         EMIT(emit_pop_mem, R_RBX, block->var.rel_addr);
-    }
-    else{
-        asm_emit("pop QWORD [rbp+(%ld)] \t", block->var.rel_addr);
+    else
         EMIT(emit_pop_mem, R_RBP, block->var.rel_addr);
-    }
 
-    asm_emit_comment("%s\n", ctx->id_table[block->var.name_index].name);
 
-    return block_size;
+    BLOCK_RET;
 }
 
 
 static size_t compileVarDecl(backend_ctx_t * ctx, IR_block_t * block)
 {
-    size_t block_size = 0;
+    BLOCK_START;
 
-    asm_emit("sub rsp, 8\t\t\t\t");
+    asm_emit_comment("\t --- allocating for %s ---\n", ctx->id_table[block->var.name_index].name);
     EMIT(emit_sub_reg_imm32, R_RSP, 8);
 
-    asm_emit_comment("%s\n", ctx->id_table[block->var.name_index].name);
-
-    return block_size;
+    BLOCK_RET;
 }
 
 
 static size_t compileAssign(backend_ctx_t * ctx, IR_block_t * block)
 {
-    size_t block_size = 0;
+    BLOCK_START;
 
     asm_emit_comment("\t--- ASSIGN ---\n");
     block_size += compilePopVar(ctx, block);
 
     asm_end_of_block();
 
-    return block_size;
+    BLOCK_RET;
 }
 
 
 static size_t compileAddSubMulDiv(backend_ctx_t * ctx, IR_block_t * block)
 {
-    size_t block_size = 0;
+    BLOCK_START;
 
     asm_emit_comment("\t--- ADD, SUB, MUL or DIV ---\n");
 
-    asm_emit("pop rcx\n");
     EMIT(emit_pop_reg, R_RCX);
-
-    asm_emit("pop rax\n");
     EMIT(emit_pop_reg, R_RAX);
 
-    if (block->type == IR_DIV){
-        asm_emit("cqo\n");
+    if (block->type == IR_DIV)
         EMIT(emit_cqo);
-    }
 
     switch(block->type){
-        case IR_ADD:
-            asm_emit("add rax, rcx\n");
-            EMIT(emit_add_reg_reg, R_RAX, R_RCX);
-            break;
-
-        case IR_SUB:
-            asm_emit("sub rax, rcx\n");
-            EMIT(emit_sub_reg_reg, R_RAX, R_RCX);
-            break;
-
-        case IR_MUL:
-            asm_emit("imul rcx\n");
-            EMIT(emit_imul_reg, R_RCX);
-            break;
-
-        case IR_DIV:
-            asm_emit("idiv rcx\n");
-            EMIT(emit_idiv_reg, R_RCX);
-            break;
+        case IR_ADD: EMIT(emit_add_reg_reg, R_RAX, R_RCX); break;
+        case IR_SUB: EMIT(emit_sub_reg_reg, R_RAX, R_RCX); break;
+        case IR_MUL: EMIT(emit_imul_reg, R_RCX); break;
+        case IR_DIV: EMIT(emit_idiv_reg, R_RCX); break;
     }
 
-    asm_emit("push rax\n");
     EMIT(emit_push_reg, R_RAX);
 
     asm_emit_comment("\t----------------------------\n");
     asm_end_of_block();
 
-    return block_size;
+    BLOCK_RET;
 }
 
 
 static size_t compileCall(backend_ctx_t * ctx, IR_block_t * block)
 {
-    size_t block_size = 0;
+    BLOCK_START;
 
     IR_block_t * label_block = ctx->IR.blocks + block->label_block_idx;
-    int32_t rel_addr = label_block->addr - block->addr;
 
     asm_emit_comment("\t--- CALLING %s ---\n", label_block->label_name);
 
+    int32_t rel_addr = label_block->addr - block->addr;
     rel_addr -= 5;
-    asm_emit("call %s\n", label_block->label_name);
     EMIT(emit_call_rel32, rel_addr);
 
-    asm_emit("add rsp, %zu\n", label_block->arg_num * 8);
     EMIT(emit_add_reg_imm32, R_RSP, label_block->arg_num * 8);
-
-    asm_emit("push rax\n");
     EMIT(emit_push_reg, R_RAX);
 
     asm_emit_comment("\t--- END OF CALLING %s ---\n", label_block->label_name);
     asm_end_of_block();
 
-    return block_size;
+    BLOCK_RET;
 }
 
 
 static size_t compileReturn(backend_ctx_t * ctx, IR_block_t * block)
 {
-    size_t block_size = 0;
+    BLOCK_START;
 
     asm_emit_comment("\t--- RETURN ---\n");
 
-    asm_emit("pop rax\n");
     EMIT(emit_pop_reg, R_RAX);
-
-    asm_emit("mov rsp, rbp\n");
     EMIT(emit_mov_reg_reg, R_RSP, R_RBP);
-
-    asm_emit("pop rbp\n");
     EMIT(emit_pop_reg, R_RBP);
-
-    asm_emit("ret\n");
     EMIT(emit_ret);
 
     asm_end_of_block();
 
-    return block_size;
+    BLOCK_RET;
 }
 
 
 static size_t compileIn(backend_ctx_t * ctx, IR_block_t * block)
 {
-    size_t block_size = 0;
+    BLOCK_START;
 
     asm_emit_comment("\t--- STANDARD IN CALLING ---\n");
 
     size_t std_in_rel_addr = ctx->IR.std_in_addr - block->addr - 5;
 
-    asm_emit("call __in_standard_func_please_do_not_name_your_funcs_this_name__\n");
     EMIT(emit_call_rel32, std_in_rel_addr);
 
-    if (block->var.is_global){
-        asm_emit("mov [rbx + (%ld)], rax\n", block->var.rel_addr);
+    if (block->var.is_global)
         EMIT(emit_mov_mem_reg, R_RBX, block->var.rel_addr, R_RAX);
-    }
-    else{
-        asm_emit("mov [rbp + (%ld)], rax\n", block->var.rel_addr);
+    else
         EMIT(emit_mov_mem_reg, R_RBP, block->var.rel_addr, R_RAX);
-    }
 
     asm_end_of_block();
 
-    return block_size;
+    BLOCK_RET;
 }
 
 
 static size_t compileOut(backend_ctx_t * ctx, IR_block_t * block)
 {
-    size_t block_size = 0;
+    BLOCK_START;
 
     asm_emit_comment("\t--- STANDARD OUT CALLING ---\n");
 
     size_t std_out_rel_addr = ctx->IR.std_out_addr - block->addr - 5;
 
-    asm_emit("call __out_standard_func_please_do_not_name_your_funcs_this_name__\n");
     EMIT(emit_call_rel32, std_out_rel_addr);
-
-    asm_emit("add rsp, 8\n");
     EMIT(emit_add_reg_imm32, R_RSP, 8);
 
     asm_end_of_block();
 
-    return block_size;
+    BLOCK_RET;
 }
 
 
 static size_t compileSqrt(backend_ctx_t * ctx, IR_block_t * block)
 {
-    size_t block_size = 0;
+    BLOCK_START;
 
     asm_emit_comment("\t--- SQRT ---\n");
 
-    asm_emit("pop rax\n");
     EMIT(emit_pop_reg, R_RAX);
-
-    asm_emit("cvtsi2sd xmm0, rax\n");
     EMIT(emit_cvtsi2sd_xmm_reg, XMM0, R_RAX);
-
-    asm_emit("sqrtsd xmm0, xmm0\n");
     EMIT(emit_sqrtsd_xmm_xmm, XMM0, XMM0);
-
-    asm_emit("cvtsd2si rax, xmm0\n");
     EMIT(emit_cvtsd2si_reg_xmm, R_RAX, XMM0);
-
-    asm_emit("push rax\n");
     EMIT(emit_push_reg, R_RAX);
 
     asm_end_of_block();
 
-    return block_size;
+    BLOCK_RET;
 }
 
 
 static size_t compileCmp(backend_ctx_t * ctx, IR_block_t * block)
 {
-    size_t block_size = 0;
+    BLOCK_START;
 
     asm_emit_comment("\t--- < <= > >= == ---\n");
-    asm_emit("xor rdx, rdx\n");
     EMIT(emit_xor_reg_reg, R_RDX, R_RDX);
-
-    asm_emit("pop rcx\n");
     EMIT(emit_pop_reg, R_RCX);
-
-    asm_emit("pop rax\n");
     EMIT(emit_pop_reg, R_RAX);
-
-    asm_emit("cmp rax, rcx\n");
     EMIT(emit_cmp_reg_reg, R_RAX, R_RCX);
-
-    switch (block->type){
-        case IR_EQUAL:      asm_emit("sete  dl\n"); break;
-        case IR_N_EQUAL:    asm_emit("setne dl\n"); break;
-        case IR_LESS:       asm_emit("setl  dl\n"); break;
-        case IR_LESS_EQ:    asm_emit("setle dl\n"); break;
-        case IR_GREATER:    asm_emit("setg  dl\n"); break;
-        case IR_GREATER_EQ: asm_emit("setge dl\n"); break;
-    }
 
     enum cmp_emit_num cmp_num = (enum cmp_emit_num)(block->type - IR_GREATER + EMIT_GREATER);
     EMIT(emit_setcc_reg8, cmp_num, R_RDX);
-
-    asm_emit("push rdx\n");
     EMIT(emit_push_reg, R_RDX);
 
     asm_end_of_block();
 
-    return block_size;
+    BLOCK_RET;
 }

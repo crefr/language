@@ -11,9 +11,15 @@
 const char * const LOG_FOLDER_NAME = "logs";
 const char * const LOG_FILE_NAME   = "logs/log.html";
 
+
+// ARGS
+// 1 - ast file name
+// 2 - asm file name (for debug)
+// 3 - elf file name
+// 4 - std lib file name (binary)
 int main(int argc, char ** argv)
 {
-    if (argc != 3){
+    if (argc != 5){
         fprintf(stderr, "X64 BACKEND: incorrect number of args given!\n");
         return 0;
     }
@@ -25,7 +31,7 @@ int main(int argc, char ** argv)
     backend_ctx_t backend = backendInit(argv[1]);
 
     makeIR(&backend);
-    compile(&backend, argv[2], "std_funcs.asm");
+    compile(&backend, argv[2], argv[3], argv[4]);
 
     backendDestroy(&backend);
 
