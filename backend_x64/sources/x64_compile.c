@@ -18,12 +18,14 @@
 
 #define EMIT(emit_func, ...) block_size += emit_func (ctx->emit ,##__VA_ARGS__)
 
-static size_t calculateAddresses(backend_ctx_t * ctx);
+static size_t calculateAddresses(backend_ctx_t * ctx, size_t start_addr);
 
-static size_t compileFromIR(backend_ctx_t * ctx);
+static size_t compileFromIR(backend_ctx_t * ctx, size_t start_addr);
 
 
 static void emitStdFuncs(backend_ctx_t * ctx, const char * std_lib_file_name);
+
+static void emitBinStdFuncs(FILE * std_funcs_bin_file, FILE * bin_file, size_t std_funcs_code_size);
 
 static size_t emitStart(backend_ctx_t * ctx, IR_block_t * block);
 
@@ -73,6 +75,9 @@ void compile(backend_ctx_t * ctx, const char * asm_file_name, const char * std_l
 
     FILE * emit_asm_file = fopen("asm_file.asm", "w");
     FILE * emit_bin_file = fopen("bin_file.bin", "wb");
+
+    FILE * std_lib_bin_file = fopen("std_funcs.bin", "rb");
+
     assert(emit_bin_file);
     setbuf(emit_bin_file, NULL);
 
@@ -87,10 +92,28 @@ void compile(backend_ctx_t * ctx, const char * asm_file_name, const char * std_l
     emitStdFuncs(ctx, std_lib_file_name);
 
     /**** compiling here ****/
-    size_t code_size = calculateAddresses(ctx);
-    writeSimpleElfHeader(emit_bin_file, code_size);
+    size_t std_lib_code_size = moveToCodeStart(std_lib_bin_file);
 
-    compileFromIR(ctx);
+    size_t std_in_addr = 0;
+    size_t std_out_addr = 0;
+
+    fread(&std_in_addr , sizeof(std_in_addr) , 1, std_lib_bin_file);
+    fread(&std_out_addr, sizeof(std_out_addr), 1, std_lib_bin_file);
+    std_lib_code_size -= sizeof(std_in_addr) + sizeof(std_out_addr);
+    std_in_addr  -= 16;
+    std_out_addr -= 16;
+
+    ctx->IR.std_in_addr  = std_in_addr;
+    ctx->IR.std_out_addr = std_out_addr;
+
+    printf("std_in  addr = %zu\n", std_in_addr);
+    printf("std_out addr = %zu\n", std_out_addr);
+
+    size_t code_size = calculateAddresses(ctx, std_lib_code_size);
+    writeSimpleElfHeader(emit_bin_file, std_lib_code_size, code_size);
+
+    emitBinStdFuncs(std_lib_bin_file, emit_bin_file, std_lib_code_size);
+    compileFromIR(ctx, 0);
     /************************/
 
     chmod("bin_file.bin", 0755);
@@ -98,18 +121,19 @@ void compile(backend_ctx_t * ctx, const char * asm_file_name, const char * std_l
     // exiting
     fclose(ctx->asm_file);
 
+    fclose(std_lib_bin_file);
     fclose(emit_asm_file);
     fclose(emit_bin_file);
 }
 
 
-static size_t calculateAddresses(backend_ctx_t * ctx)
+static size_t calculateAddresses(backend_ctx_t * ctx, size_t start_addr)
 {
     assert(ctx);
 
     ctx->emit->emitting = false;
 
-    size_t code_size = compileFromIR(ctx);
+    size_t code_size = compileFromIR(ctx, start_addr);
 
     ctx->emit->emitting = true;
 
@@ -117,7 +141,7 @@ static size_t calculateAddresses(backend_ctx_t * ctx)
 }
 
 
-static size_t compileFromIR(backend_ctx_t * ctx)
+static size_t compileFromIR(backend_ctx_t * ctx, size_t start_addr)
 {
     assert(ctx);
 
@@ -125,7 +149,7 @@ static size_t compileFromIR(backend_ctx_t * ctx)
 
     fprintf(ctx->asm_file, "global _start\n");
 
-    size_t cur_addr = 0;
+    size_t cur_addr = start_addr;
 
     for (size_t block_index = 0; block_index < ctx->IR.size; block_index++){
         IR_block_t * block = ctx->IR.blocks + block_index;
@@ -197,6 +221,15 @@ static void emitStdFuncs(backend_ctx_t * ctx, const char * std_lib_file_name)
 
     free(buffer);
     fclose(std_lib);
+}
+
+static void emitBinStdFuncs(FILE * std_funcs_bin_file, FILE * bin_file, size_t std_funcs_code_size)
+{
+    char * buffer = (char *)calloc(std_funcs_code_size, sizeof(char));
+    fread(buffer, sizeof(char), std_funcs_code_size, std_funcs_bin_file);
+    fwrite(buffer, sizeof(char), std_funcs_code_size, bin_file);
+
+    free(buffer);
 }
 
 
@@ -485,8 +518,10 @@ static size_t compileIn(backend_ctx_t * ctx, IR_block_t * block)
 
     asm_emit_comment("\t--- STANDARD IN CALLING ---\n");
 
+    size_t std_in_rel_addr = ctx->IR.std_in_addr - block->addr - 5;
+
     asm_emit("call __in_standard_func_please_do_not_name_your_funcs_this_name__\n");
-    EMIT(emit_call_rel32, 52552525);
+    EMIT(emit_call_rel32, std_in_rel_addr);
 
     if (block->var.is_global){
         asm_emit("mov [rbx + (%ld)], rax\n", block->var.rel_addr);
@@ -509,8 +544,10 @@ static size_t compileOut(backend_ctx_t * ctx, IR_block_t * block)
 
     asm_emit_comment("\t--- STANDARD OUT CALLING ---\n");
 
+    size_t std_out_rel_addr = ctx->IR.std_out_addr - block->addr - 5;
+
     asm_emit("call __out_standard_func_please_do_not_name_your_funcs_this_name__\n");
-    EMIT(emit_call_rel32, 22869);
+    EMIT(emit_call_rel32, std_out_rel_addr);
 
     asm_emit("add rsp, 8\n");
     EMIT(emit_add_reg_imm32, R_RSP, 8);

@@ -5,7 +5,7 @@
 
 #include <elf.h>
 
-size_t writeSimpleElfHeader(FILE * elf_file, size_t code_size)
+size_t writeSimpleElfHeader(FILE * elf_file, size_t entry_point_offset, size_t code_size)
 {
     assert(elf_file);
 
@@ -21,7 +21,7 @@ size_t writeSimpleElfHeader(FILE * elf_file, size_t code_size)
     const size_t code_offset = phdr_offset + sizeof(Elf64_Phdr);
 
     const size_t code_segment_start = 0x401000;
-    const size_t entry_point = code_segment_start + code_offset;
+    const size_t entry_point = code_segment_start + code_offset + entry_point_offset;
 
     // ELF main header
     Elf64_Ehdr elf_hdr = {
@@ -64,4 +64,24 @@ size_t writeSimpleElfHeader(FILE * elf_file, size_t code_size)
     fwrite(&seg_hdr, sizeof(seg_hdr), 1, elf_file);
 
     return code_offset;
+}
+
+
+size_t moveToCodeStart(FILE * elf_file)
+{
+    assert(elf_file);
+
+    Elf64_Ehdr elf_hdr = {};
+    fread(&elf_hdr, sizeof(elf_hdr), 1, elf_file);
+
+    Elf64_Phdr data_seg_hdr = {};
+    fread(&data_seg_hdr, sizeof(data_seg_hdr), 1, elf_file);
+
+    Elf64_Phdr code_seg_hdr = {};
+    fread(&code_seg_hdr, sizeof(code_seg_hdr), 1, elf_file);
+
+    // moving to the start of code segment
+    fseek(elf_file, code_seg_hdr.p_offset, SEEK_SET);
+
+    return code_seg_hdr.p_filesz;
 }

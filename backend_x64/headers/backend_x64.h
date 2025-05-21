@@ -90,6 +90,9 @@ typedef struct {
     IR_block_t * blocks;
     size_t capacity;
     size_t size;
+
+    int32_t std_in_addr;
+    int32_t std_out_addr;
 } IR_context_t;
 
 typedef struct {
