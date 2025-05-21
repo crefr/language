@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdarg.h>
+#include <assert.h>
 
 #include "x64_emitters.h"
 
@@ -79,9 +80,9 @@ size_t emit_push_reg(emit_ctx_t * ctx, int reg)
 
     // r8+ registers
     if (reg >= 8)
-        return emit_bytes(REX_B, (uint8_t)(0x50 + (reg - 8)));
+        return emit_bytes(REX_B, 0x50 + (reg - 8));
 
-    return emit_bytes((uint8_t)(0x50 + reg));
+    return emit_bytes(0x50 + reg);
 }
 
 // push imm32
@@ -91,7 +92,7 @@ size_t emit_push_imm32(emit_ctx_t * ctx, int32_t imm32)
 
     size_t bytes_emitted = 0;
 
-    bytes_emitted += emit_bytes((uint8_t)0x68);
+    bytes_emitted += emit_bytes(0x68);
     bytes_emitted += emit_imm32(imm32);
 
     return bytes_emitted;
@@ -105,9 +106,9 @@ size_t emit_push_mem(emit_ctx_t * ctx, int reg, int32_t imm32)
     size_t bytes_emitted = 0;
 
     if (reg < 8)
-        bytes_emitted += emit_bytes((uint8_t)0xFF, modRM(0b10, 6, reg));
+        bytes_emitted += emit_bytes(0xFF, modRM(0b10, 6, reg));
     else
-        bytes_emitted += emit_bytes(REX_B, (uint8_t)0xFF, modRM(0b10, 6, reg - 8));
+        bytes_emitted += emit_bytes(REX_B, 0xFF, modRM(0b10, 6, reg - 8));
 
     bytes_emitted += emit_imm32(imm32);
 
@@ -124,9 +125,9 @@ size_t emit_pop_reg(emit_ctx_t * ctx, int reg)
 
     // r8+ registers
     if (reg >= 8)
-        return emit_bytes(REX_B, (uint8_t)(0x58 + (reg - 8)));
+        return emit_bytes(REX_B, 0x58 + (reg - 8));
 
-    return emit_bytes((uint8_t)(0x58 + reg));
+    return emit_bytes(0x58 + reg);
 }
 
 
@@ -138,9 +139,9 @@ size_t emit_pop_mem(emit_ctx_t * ctx, int reg, int32_t imm32)
     size_t bytes_emitted = 0;
 
     if (reg < 8)
-        bytes_emitted += emit_bytes((uint8_t)0x8F, modRM(0b10, 0, reg));
+        bytes_emitted += emit_bytes(0x8F, modRM(0b10, 0, reg));
     else
-        bytes_emitted += emit_bytes(REX_B, (uint8_t)0x8F, modRM(0b10, 0, reg - 8));
+        bytes_emitted += emit_bytes(REX_B, 0x8F, modRM(0b10, 0, reg - 8));
 
     bytes_emitted += emit_imm32(imm32);
 
@@ -162,7 +163,7 @@ size_t emit_sub_reg_imm32(emit_ctx_t * ctx, int reg, int32_t imm32)
 
     size_t bytes_emitted = 0;
 
-    bytes_emitted += emit_bytes(rex, (uint8_t)0x81, modRM(0b11, 5, reg));
+    bytes_emitted += emit_bytes(rex, 0x81, modRM(0b11, 5, reg));
     bytes_emitted += emit_imm32(imm32);
 
     return bytes_emitted;
@@ -178,7 +179,7 @@ size_t emit_sub_reg_reg(emit_ctx_t * ctx, int dest, int src)
     check_dst_reg(dest, rex);
     check_src_reg(src, rex);
 
-    return emit_bytes(rex, (uint8_t)0x29, modRM(0b11, src, dest));
+    return emit_bytes(rex, 0x29, modRM(0b11, src, dest));
 }
 
 
@@ -194,7 +195,7 @@ size_t emit_add_reg_imm32(emit_ctx_t * ctx, int reg, int32_t imm32)
 
     size_t bytes_emitted = 0;
 
-    bytes_emitted += emit_bytes(rex, (uint8_t)0x81, modRM(0b11, 0, reg));
+    bytes_emitted += emit_bytes(rex, 0x81, modRM(0b11, 0, reg));
     bytes_emitted += emit_imm32(imm32);
 
     return bytes_emitted;
@@ -210,7 +211,7 @@ size_t emit_add_reg_reg(emit_ctx_t * ctx, int dest, int src)
     check_dst_reg(dest, rex);
     check_src_reg(src, rex);
 
-    return emit_bytes(rex, (uint8_t)0x01, modRM(0b11, src, dest));
+    return emit_bytes(rex, 0x01, modRM(0b11, src, dest));
 }
 /**************************************************/
 
@@ -224,7 +225,7 @@ size_t emit_idiv_reg(emit_ctx_t * ctx, int reg)
     uint8_t rex = REX_W;
     check_dst_reg(reg, rex);
 
-    return emit_bytes(rex, (uint8_t)0xF7, modRM(0b11, 7, reg));
+    return emit_bytes(rex, 0xF7, modRM(0b11, 7, reg));
 }
 
 
@@ -236,7 +237,7 @@ size_t emit_imul_reg(emit_ctx_t * ctx, int reg)
     uint8_t rex = REX_W;
     check_dst_reg(reg, rex);
 
-    return emit_bytes(rex, (uint8_t)0xF7, modRM(0b11, 5, reg));
+    return emit_bytes(rex, 0xF7, modRM(0b11, 5, reg));
 }
 /****************************************************/
 
@@ -251,7 +252,7 @@ size_t emit_mov_reg_reg(emit_ctx_t * ctx, int dst, int src)
     check_dst_reg(dst, rex);
     check_src_reg(src, rex);
 
-    return emit_bytes(rex, (uint8_t)0x89, modRM(0b11, src, dst));
+    return emit_bytes(rex, 0x89, modRM(0b11, src, dst));
 }
 
 
@@ -266,7 +267,7 @@ size_t emit_mov_mem_reg(emit_ctx_t * ctx, int dst, int32_t imm32, int src)
 
     size_t emitted_bytes = 0;
 
-    emitted_bytes += emit_bytes(rex, (uint8_t)0x89, modRM(0b10, src, dst));
+    emitted_bytes += emit_bytes(rex, 0x89, modRM(0b10, src, dst));
     emitted_bytes += emit_imm32(imm32);
 
     return emitted_bytes;
@@ -283,7 +284,7 @@ size_t emit_mov_reg_imm(emit_ctx_t * ctx, int reg, int64_t imm64)
 
     size_t emitted_bytes = 0;
 
-    emitted_bytes += emit_bytes(rex, (uint8_t)(0xB8 + reg));
+    emitted_bytes += emit_bytes(rex, 0xB8 + reg);
     emitted_bytes += emit_imm64(imm64);
 
     return emitted_bytes;
@@ -298,7 +299,7 @@ size_t emit_jmp_rel32(emit_ctx_t * ctx, int32_t rel32)
     asm_emit("jmp $ + 5 + (%d)\n", rel32);
 
     size_t emitted_bytes = 0;
-    emitted_bytes += emit_bytes((uint8_t)0xE9);
+    emitted_bytes += emit_bytes(0xE9);
     emitted_bytes += emit_imm32(rel32);
 
     return emitted_bytes;
@@ -310,7 +311,7 @@ size_t emit_jz_rel32(emit_ctx_t * ctx, int32_t rel32)
     asm_emit("jz $ + 6 + (%d)\n", rel32);
 
     size_t emitted_bytes = 0;
-    emitted_bytes += emit_bytes((uint8_t)0x0F, (uint8_t)0x84);
+    emitted_bytes += emit_bytes(0x0F, 0x84);
     emitted_bytes += emit_imm32(rel32);
 
     return emitted_bytes;
@@ -323,7 +324,7 @@ size_t emit_call_rel32(emit_ctx_t * ctx, int32_t rel32)
     asm_emit("call $ + 5 + (%d)\n", rel32);
 
     size_t emitted_bytes = 0;
-    emitted_bytes += emit_bytes((uint8_t)0xE8);
+    emitted_bytes += emit_bytes(0xE8);
     emitted_bytes += emit_imm32(rel32);
 
     return emitted_bytes;
@@ -353,7 +354,7 @@ size_t emit_test_reg_reg(emit_ctx_t * ctx, int dst, int src)
     check_dst_reg(dst, rex);
     check_src_reg(src, rex);
 
-    return emit_bytes(rex, (uint8_t)0x85, modRM(0b11, src, dst));
+    return emit_bytes(rex, 0x85, modRM(0b11, src, dst));
 }
 
 // cmp reg64, reg64
@@ -415,11 +416,42 @@ size_t emit_setcc_reg8(emit_ctx_t * ctx, enum cmp_emit_num cmp_num, int reg)
 }
 
 
+// cvtsd2si reg64, xmmN
+// currently not supports r8+
+size_t emit_cvtsd2si_reg_xmm(emit_ctx_t * ctx, int reg64, int xmm)
+{
+    assert(reg64 <= R_RDI);
+    asm_emit("cvtsd2si %s, %s\n", reg_names[reg64], xmm_names[xmm]);
+
+    return emit_bytes(0xF2, REX_W, 0x0F, 0x2D, modRM(0b11, reg64, xmm));
+}
+
+
+// cvtsi2sd xmmN, reg64
+// currently not supports r8+
+size_t emit_cvtsi2sd_xmm_reg(emit_ctx_t * ctx, int xmm, int reg64)
+{
+    assert(reg64 <= R_RDI);
+    asm_emit("cvtsd2si %s, %s\n",  xmm_names[xmm], reg_names[reg64]);
+
+    return emit_bytes(0xF2, REX_W, 0x0F, 0x2A, modRM(0b11, xmm, reg64));
+}
+
+
+// sqrtsd xmm, xmm
+size_t emit_sqrtsd_xmm_xmm(emit_ctx_t * ctx, int xmm_dst, int xmm_src)
+{
+    asm_emit("sqrtsd %s, %s\n", xmm_names[xmm_dst], xmm_names[xmm_src]);
+
+    return emit_bytes(0xF2, 0x0F, 0x51, modRM(0b11, xmm_dst, xmm_src));
+}
+
+
 // ret
 size_t emit_ret(emit_ctx_t * ctx)
 {
     asm_emit("ret\n");
-    return emit_bytes((uint8_t)0xC3);
+    return emit_bytes(0xC3);
 }
 
 // cqo
@@ -427,7 +459,7 @@ size_t emit_cqo(emit_ctx_t * ctx)
 {
     asm_emit("cqo\n");
 
-    return emit_bytes((uint8_t)0x48, (uint8_t)0x99);
+    return emit_bytes(0x48, 0x99);
 }
 
 // syscall
@@ -435,7 +467,7 @@ size_t emit_syscall(emit_ctx_t * ctx)
 {
     asm_emit("syscall\n");
 
-    return emit_bytes((uint8_t)0x0F, (uint8_t)0x05);
+    return emit_bytes(0x0F, 0x05);
 }
 
 

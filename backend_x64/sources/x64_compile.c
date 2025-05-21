@@ -503,12 +503,16 @@ static size_t compileSqrt(backend_ctx_t * ctx, IR_block_t * block)
     EMIT(emit_pop_reg, R_RAX);
 
     asm_emit("cvtsi2sd xmm0, rax\n");
-    //!!!!!!!!!!!!!!!!!!!!!!!!!!
+    EMIT(emit_cvtsi2sd_xmm_reg, XMM0, R_RAX);
 
     asm_emit("sqrtsd xmm0, xmm0\n");
+    EMIT(emit_sqrtsd_xmm_xmm, XMM0, XMM0);
 
     asm_emit("cvtsd2si rax, xmm0\n");
+    EMIT(emit_cvtsd2si_reg_xmm, R_RAX, XMM0);
+
     asm_emit("push rax\n");
+    EMIT(emit_push_reg, R_RAX);
 
     asm_end_of_block();
 

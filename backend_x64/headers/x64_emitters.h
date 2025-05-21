@@ -30,6 +30,17 @@ enum regs {
     R_R15 = R_RDI + 8
 };
 
+enum xmm_regs {
+    XMM0 = 0,
+    XMM1 = 1,
+    XMM2 = 2,
+    XMM3 = 3,
+    XMM4 = 4,
+    XMM5 = 5,
+    XMM6 = 6,
+    XMM7 = 7,
+};
+
 
 const char * const reg_names[16] = {
     "RAX", "RCX", "RDX", "RBX", "RSP", "RBP", "RSI", "RDI",
@@ -37,7 +48,11 @@ const char * const reg_names[16] = {
 };
 
 const char * const reg8_names[8] = {
-    "AL" , "CL" , "DL" , "BL" , "SPL", "BPL", "SIL", "DIL",
+    "AL" , "CL" , "DL" , "BL" , "SPL", "BPL", "SIL", "DIL"
+};
+
+const char * const xmm_names[8] = {
+    "XMM0", "XMM1", "XMM2", "XMM3", "XMM4", "XMM5", "XMM6", "XMM7"
 };
 
 
@@ -131,6 +146,17 @@ size_t emit_cmp_reg_reg(emit_ctx_t * ctx, int dst, int src);
 
 // setcc reg8
 size_t emit_setcc_reg8(emit_ctx_t * ctx, enum cmp_emit_num cmp_num, int reg);
+
+// cvtsd2si reg64, xmmN
+// currently not supports r8+
+size_t emit_cvtsd2si_reg_xmm(emit_ctx_t * ctx, int reg64, int xmm);
+
+// cvtsi2sd xmmN, reg64
+// currently not supports r8+
+size_t emit_cvtsi2sd_xmm_reg(emit_ctx_t * ctx, int xmm, int reg64);
+
+// sqrtsd xmm, xmm
+size_t emit_sqrtsd_xmm_xmm(emit_ctx_t * ctx, int xmm_dst, int xmm_src);
 
 // ret
 size_t emit_ret(emit_ctx_t * ctx);
