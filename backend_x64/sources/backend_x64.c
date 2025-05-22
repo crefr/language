@@ -155,11 +155,8 @@ static void leaveScope(backend_ctx_t * ctx, enum scope_start scope)
     size_t start_index =  ctx->name_stack.size - 1;
     size_t elem_index = start_index;
 
-    if (elems[elem_index].name_index == scope)
-        elem_index--;
-    else
-        for ( ; elems[elem_index].name_index != scope; elem_index--)
-            ;
+    for ( ; elems[elem_index].name_index != scope; elem_index--)
+        ;
 
     if (scope == START_OF_FUNC_SCOPE)
         ctx->local_var_counter = 0;
