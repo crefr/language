@@ -213,22 +213,6 @@ static size_t compileFromIR(backend_ctx_t * ctx, size_t start_addr)
 }
 
 
-static void emitStdFuncs(backend_ctx_t * ctx, const char * std_lib_file_name)
-{
-    FILE * std_lib = fopen(std_lib_file_name, "r");
-
-    fseek(std_lib, 0, SEEK_END);
-    size_t file_size = ftell(std_lib);
-    fseek(std_lib, 0, SEEK_SET);
-
-    char * buffer = (char *)calloc(file_size, sizeof(char));
-    fread(buffer, sizeof(char), file_size, std_lib);
-    fwrite(buffer, sizeof(char), file_size, ctx->asm_file);
-
-    free(buffer);
-    fclose(std_lib);
-}
-
 static void emitBinStdFuncs(FILE * std_funcs_bin_file, FILE * bin_file, size_t std_funcs_code_size)
 {
     char * buffer = (char *)calloc(std_funcs_code_size, sizeof(char));
