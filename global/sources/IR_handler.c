@@ -234,10 +234,12 @@ static node_t * readTreeFromIRrecursive(tree_context_t * tree, const char ** cur
             break;
         }
     }
-    // assert(op_num != NO_OP);
-    if (op_num == NO_OP){
-        fprintf(stderr, "WARNING: unknown operator '%s' - program is unpredictable\n", op_buffer);
-    }
+
+    if (op_num == TEXT)
+        fprintf(stderr, "WARNING: TEXT operator is not supported\n", op_buffer);
+
+    if (op_num == NO_OP)
+        fprintf(stderr, "WARNING: unknown operator '%s' - program is unpredictable (tree writing would be incorrect)\n", op_buffer);
 
     node_t * opr_node = tree->cur_node;
     tree->cur_node++;

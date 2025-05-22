@@ -59,7 +59,7 @@ enum oper{
     SEP      = 34,
     TEXT     = 35,
 
-    NO_OP    = -1
+    NO_OP
 };
 
 typedef struct {
@@ -121,7 +121,10 @@ const oper_t opers[] = {
 
     {.num = ASSIGN  , .name = "="  , .dot_name = "="  , .binary = true , .commutative = false, .asm_str = NULL, .can_simple = false},
     {.num = SEP     , .name = ";"  , .dot_name = "SEP", .binary = true , .commutative = false, .asm_str = NULL, .can_simple = false},
-    {.num = TEXT    , .name = "NO_NAME"  , .dot_name = "TEXT", .binary = false , .commutative = false, .asm_str = NULL, .can_simple = false}
+    {.num = TEXT    , .name = "text"   , .dot_name = "TEXT",  .binary = false , .commutative = false, .asm_str = NULL, .can_simple = false},
+
+    //! must be the last!!!
+    {.num = NO_OP   , .name = "_NO_NAME_", .dot_name = "NO_OP", .binary = false , .commutative = false, .asm_str = NULL, .can_simple = false}
 };
 const size_t opers_size = sizeof(opers) / sizeof(*opers);
 
