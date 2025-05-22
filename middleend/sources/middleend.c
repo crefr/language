@@ -124,7 +124,7 @@ node_t * foldConstants(me_context_t * me, node_t * node, bool * changed_tree)
     node->left  = foldConstants(me, node->left , changed_tree);
     node->right = foldConstants(me, node->right, changed_tree);
 
-    if (! opers[op_num].can_simple)
+    if (op_num == NO_OP || ! opers[op_num].can_simple)
         return node;
 
     double new_val = 0.;
@@ -224,6 +224,9 @@ node_t * deleteNeutral(me_context_t * me, node_t * node, bool * changed_tree)
     if (node->type != OPR)
         return node;
 
+    if (node->val.op == NO_OP)
+        return node;
+
     node->left  = deleteNeutral(me, node->left,  changed_tree);
     node->right = deleteNeutral(me, node->right, changed_tree);
 
@@ -232,6 +235,7 @@ node_t * deleteNeutral(me_context_t * me, node_t * node, bool * changed_tree)
 
     return delNeutralInNonCommutatives(me, node, changed_tree);
 }
+
 
 static node_t * delNeutralInCommutatives(me_context_t * me, node_t * node, bool * changed_tree)
 {
@@ -242,6 +246,7 @@ static node_t * delNeutralInCommutatives(me_context_t * me, node_t * node, bool 
 
     node_t * cur_node = node->left;
     node_t * another_node = node->right;
+
     while (cur_node != NULL) {
         if (cur_node->type == NUM){
             switch (node->val.op){

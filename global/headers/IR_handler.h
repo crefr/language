@@ -49,7 +49,7 @@ const struct oper_IR_name oper_names[] = {
 
     {FUNC_HEADER,   "FUNC_HDR"},
 
-    // {TEXT, "TEXT"}
+    {TEXT, "TEXT"}
 };
 const size_t oper_names_num = sizeof(oper_names) / sizeof(oper_names[0]);
 const size_t MAX_IR_OPER_NAME_LEN = 64;

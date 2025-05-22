@@ -234,7 +234,10 @@ static node_t * readTreeFromIRrecursive(tree_context_t * tree, const char ** cur
             break;
         }
     }
-    assert(op_num != NO_OP);
+    // assert(op_num != NO_OP);
+    if (op_num == NO_OP){
+        fprintf(stderr, "WARNING: unknown operator '%s' - program is unpredictable\n", op_buffer);
+    }
 
     node_t * opr_node = tree->cur_node;
     tree->cur_node++;
