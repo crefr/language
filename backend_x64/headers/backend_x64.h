@@ -61,7 +61,9 @@ enum IR_type {
     IR_N_EQUAL    = 23,
 
     IR_START      = 24,
-    IR_EXIT       = 25
+    IR_EXIT       = 25,
+
+    IR_QUIT_SCOPE = 26
 };
 
 

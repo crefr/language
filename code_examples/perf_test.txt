@@ -1,18 +1,18 @@
 var x;
-var y;
-var fact_result;
-
 x = 0;
 
 while (x < 200)
   begin
+    var y;
     y = 0;
 
     while (y < 10000)
       begin
+        var fact_result;
         fact_result = factorial(15);
         y = y + 1;
       end;
+
     x = x + 1;
   end;
 

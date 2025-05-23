@@ -26,7 +26,14 @@ static void nameStackPush(backend_ctx_t * ctx, size_t var_index, int64_t addr, b
 
 static void enterScope(backend_ctx_t * ctx, enum scope_start scope);
 
-static void leaveScope(backend_ctx_t * ctx, enum scope_start scope);
+static size_t leaveScope(backend_ctx_t * ctx, enum scope_start scope);
+
+static void leaveScopeAndFreeVars(backend_ctx_t * ctx, enum scope_start scope);
+
+
+static IR_block_t * IRnextBlock(backend_ctx_t * ctx, enum IR_type type);
+
+static size_t IRnewLabel(backend_ctx_t * ctx, const char * fmt, ...);
 
 
 /************** TRANSLATORS **************/
@@ -146,7 +153,7 @@ static void enterScope(backend_ctx_t * ctx, enum scope_start scope)
 }
 
 
-static void leaveScope(backend_ctx_t * ctx, enum scope_start scope)
+static size_t leaveScope(backend_ctx_t * ctx, enum scope_start scope)
 {
     assert(ctx->name_stack.size > 0);
 
@@ -158,14 +165,27 @@ static void leaveScope(backend_ctx_t * ctx, enum scope_start scope)
     for ( ; elems[elem_index].name_index != scope; elem_index--)
         ;
 
-    if (scope == START_OF_FUNC_SCOPE)
+    if (scope == START_OF_FUNC_SCOPE){
         ctx->local_var_counter = 0;
-
+    }
     else {
-        ctx->local_var_counter -= (start_index - elem_index);
+        if (ctx->in_function)
+            ctx->local_var_counter -= (start_index - elem_index);
+        else
+            ctx->global_var_counter -= (start_index - elem_index);
     }
 
     ctx->name_stack.size = elem_index;
+
+    return start_index - elem_index;
+}
+
+static void leaveScopeAndFreeVars(backend_ctx_t * ctx, enum scope_start scope)
+{
+    assert(ctx);
+
+    size_t vars_to_pop = leaveScope(ctx, scope);
+    IRnextBlock(ctx, IR_QUIT_SCOPE)->imm_val = vars_to_pop;
 }
 
 
@@ -460,6 +480,8 @@ static void translateVarDecl(backend_ctx_t * ctx, node_t * node)
 {
     logPrint(LOG_DEBUG_PLUS, "%s\n", __PRETTY_FUNCTION__);
 
+    printf("locals = %ld\n", ctx->local_var_counter);
+
     int64_t addr = (ctx->in_function) ?
         (- ctx->local_var_counter  * 8 - 8):
         (- ctx->global_var_counter * 8);
@@ -499,8 +521,6 @@ static void translateIfElse(backend_ctx_t * ctx, node_t * node)
     // condition expression
     translateExpression(ctx, node->left);
 
-    enterScope(ctx, START_OF_SCOPE);
-
     size_t if_counter = ctx->if_counter;
     ctx->if_counter++;
 
@@ -512,7 +532,9 @@ static void translateIfElse(backend_ctx_t * ctx, node_t * node)
         IR_block_t * else_cond_jmp = IRnextBlock(ctx, IR_COND_JMP);
 
         // if body
+        enterScope(ctx, START_OF_SCOPE);
         makeIRrecursive(ctx, if_else_node->left);
+        leaveScopeAndFreeVars(ctx, START_OF_SCOPE);
 
         // jump over else
         IR_block_t * jmp_over_else = IRnextBlock(ctx, IR_JMP);
@@ -521,7 +543,9 @@ static void translateIfElse(backend_ctx_t * ctx, node_t * node)
         else_cond_jmp->label_block_idx = IRnewLabel(ctx, "__IF_%zu_ELSE", if_counter);
 
         // else body
+        enterScope(ctx, START_OF_SCOPE);
         makeIRrecursive(ctx, if_else_node->right);
+        leaveScopeAndFreeVars(ctx, START_OF_SCOPE);
 
         // end label
         jmp_over_else->label_block_idx = IRnewLabel(ctx, "__IF_%zu_END", if_counter);
@@ -532,13 +556,13 @@ static void translateIfElse(backend_ctx_t * ctx, node_t * node)
         // condition
         IR_block_t * end_cond_jmp = IRnextBlock(ctx, IR_COND_JMP);
 
+        enterScope(ctx, START_OF_SCOPE);
         makeIRrecursive(ctx, node->right);
+        leaveScopeAndFreeVars(ctx, START_OF_SCOPE);
 
         // end label
         end_cond_jmp->label_block_idx = IRnewLabel(ctx, "__IF_%zu_END", if_counter);
     }
-
-    leaveScope(ctx, START_OF_SCOPE);
 }
 
 
@@ -547,12 +571,10 @@ static void translateWhile(backend_ctx_t * ctx, node_t * node)
     logPrint(LOG_DEBUG_PLUS, "%s\n", __PRETTY_FUNCTION__);
 
     // label of loop start
-    size_t cond_check_label_idx = IRnewLabel(ctx, "__WHILE_%zu_COND_CHECK:\n", ctx->while_counter);
+    size_t cond_check_label_idx = IRnewLabel(ctx, "__WHILE_%zu_COND_CHECK:", ctx->while_counter);
 
     // condition expression
     translateExpression(ctx, node->left);
-
-    enterScope(ctx, START_OF_SCOPE);
 
     size_t while_counter = ctx->while_counter;
     ctx->while_counter++;
@@ -561,18 +583,17 @@ static void translateWhile(backend_ctx_t * ctx, node_t * node)
     IR_block_t * cond_jmp_to_end = IRnextBlock(ctx, IR_COND_JMP);
 
     // body of while
+    enterScope(ctx, START_OF_SCOPE);
     makeIRrecursive(ctx, node->right);
+    leaveScopeAndFreeVars(ctx, START_OF_SCOPE);
 
     // jmp to the start
     IR_block_t * jmp_to_cond_check = IRnextBlock(ctx, IR_JMP);
     jmp_to_cond_check->label_block_idx = cond_check_label_idx;
 
     // end label
-    size_t end_label_idx = IRnewLabel(ctx, "__WHILE_%zu_END\n", ctx->while_counter);
+    size_t end_label_idx = IRnewLabel(ctx, "__WHILE_%zu_END", while_counter);
     cond_jmp_to_end->label_block_idx = end_label_idx;
-
-    leaveScope(ctx, START_OF_SCOPE);
-    ctx->while_counter++;
 }
 
 
@@ -592,6 +613,8 @@ static void translateFuncDecl(backend_ctx_t * ctx, node_t * node)
 
     enterScope(ctx, START_OF_FUNC_SCOPE);
     ctx->in_function = true;
+
+    assert(ctx->local_var_counter == 0);
 
     for (size_t arg_index = 0; arg_index < num_of_args; arg_index++){
         nameStackPush(ctx, func_arg->left->val.id, arg_index * 8 + 16, false);

@@ -119,6 +119,7 @@ static enum id_stat getIdName(const char ** src_str, char * buffer)
     assert(src_str);
     assert(buffer);
 
+    // for identificators or operators with normal names
     if (isalpha(**src_str) || **src_str == '_'){
         while((**src_str != '\0') && (**src_str != COMMENT_START) && (isalpha(**src_str) || **src_str == '_' || isdigit(**src_str)))
             *(buffer++) = *((*src_str)++);
@@ -126,6 +127,7 @@ static enum id_stat getIdName(const char ** src_str, char * buffer)
         return IS_IDR_OR_OPR;
     }
 
+    // for operators as != <= == >= ...
     while ((**src_str != '\0') && (**src_str != COMMENT_START) && (!isalpha(**src_str) && !isdigit(**src_str) && !isspace(**src_str) && **src_str != '_'))
         *(buffer++) = *((*src_str)++);
 

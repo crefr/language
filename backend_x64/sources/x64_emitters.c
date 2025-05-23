@@ -131,7 +131,7 @@ size_t emit_pop_reg(emit_ctx_t * ctx, int reg)
 // pop QWORD[reg + imm32]
 size_t emit_pop_mem(emit_ctx_t * ctx, int reg, int32_t imm32)
 {
-    asm_emit("push QWORD[%s+(%d)]\n", reg_names[reg], imm32);
+    asm_emit("pop QWORD[%s+(%d)]\n", reg_names[reg], imm32);
 
     size_t bytes_emitted = 0;
 

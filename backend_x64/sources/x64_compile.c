@@ -65,6 +65,9 @@ static size_t compileSqrt(backend_ctx_t * ctx, IR_block_t * block);
 
 static size_t compileCmp(backend_ctx_t * ctx, IR_block_t * block);
 
+static size_t compileQuitScope(backend_ctx_t * ctx, IR_block_t * block);
+
+
 
 void compile(backend_ctx_t * ctx, const char * asm_file_name, const char * elf_file_name, const char * std_lib_file_name)
 {
@@ -197,6 +200,8 @@ static size_t compileFromIR(backend_ctx_t * ctx, size_t start_addr)
             case IR_OUT: block_size = compileOut(ctx, block); break;
 
             case IR_SQRT: block_size = compileSqrt(ctx, block); break;
+
+            case IR_QUIT_SCOPE: block_size = compileQuitScope(ctx, block); break;
         }
 
         // if we are calculating addresses
@@ -403,6 +408,20 @@ static size_t compileAddSubMulDiv(backend_ctx_t * ctx, IR_block_t * block)
 
     asm_emit_comment("\t----------------------------\n");
     asm_end_of_block();
+
+    BLOCK_RET;
+}
+
+
+static size_t compileQuitScope(backend_ctx_t * ctx, IR_block_t * block)
+{
+    BLOCK_START;
+
+    asm_emit_comment("\t--- FREEING SPACE FROM LOCAL VARS ---\n");
+
+    size_t locals_to_pop = block->imm_val;
+
+    EMIT(emit_add_reg_imm32, R_RSP, locals_to_pop * 8);
 
     BLOCK_RET;
 }
